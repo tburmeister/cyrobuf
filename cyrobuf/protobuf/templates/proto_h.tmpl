@@ -1,0 +1,69 @@
+#ifndef {{ header_block }}
+#define {{ header_block }}
+
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "cyrobuf_list.h"
+#include "cyrobuf_util.h"
+
+{%- for import in imports %}
+#include "{{ import }}_proto.h"
+{%- endfor %}
+
+{%- macro structdef(name, message) %}
+struct {{ name }} {
+{% for field in message.fields|sort(attribute='index') -%}
+	{%- if field.modifier == 'repeated' %}
+	struct {{ field.list_type }} {{ field.name }};
+	{%- elif field.type == 'string' %}
+	char *{{ field.name }};
+	{%- elif field.type == 'bytes' %}
+	uint8_t *{{ field.name }};
+	{%- elif field.type == 'message' %}
+	struct {% if field.is_nested %}{{ name }}_{% endif %}{{ field.message_name }} {{ field.name }};
+	{%- elif field.type == 'enum' %}
+	enum {% if field.is_nested %}{{ name }}_{% endif %}{{ field.enum_name }} {{ field.name }};
+	{%- else %}
+	{{ field.c_type }} {{ field.name }};
+	{%- endif %}
+{%- endfor %}
+};
+
+struct {{ name }} *{{ name }}_init(void);
+void {{ name }}_destroy(struct {{ name }} *message);
+void {{ name }}_clear(struct {{ name }} *message);
+int {{ name }}_parse_from_string(struct {{ name }} *message,
+	const uint8_t *buffer, size_t buffer_size);
+int {{ name }}_serialize_to_string(struct {{ name }} *message,
+	uint8_t *buffer, size_t buffer_size, size_t *used);
+
+	{%- for message_name, message_message in message.messages.items() %}
+{{ structdef(name + '_' + message_name, message_message) }}
+	{%- endfor %}
+
+	{%- for enum_name, enum in message.enums.items() %}
+{{ enumdef(name + '_' + enum_name, enum) }}
+	{%- endfor %}
+{%- endmacro %}
+
+{%- macro enumdef(name, enum) %}
+enum {{ name }} {
+	{%- for field in enum.fields %}
+	{{ field.name }} = {{ field.value }},
+	{%- endfor %}
+};
+{%- endmacro %}
+
+{%- for enum in enums %}
+{{ enumdef(enum.name, enum) }}
+{%- endfor %}
+
+{%- for message in messages %}
+{{ structdef(message.name, message) }}
+{%- endfor %}
+
+#endif
+

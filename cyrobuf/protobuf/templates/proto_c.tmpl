@@ -1,0 +1,75 @@
+#include <string.h>
+
+#include "{{ fname }}_proto.h"
+
+{%- macro structdef(name, message) %}
+static const struct {{ name }} {{ name }}_defaults;
+    {%- for field in message.fields %}
+        {%- if field.default is defined %}
+{{name}}_defaults.{{ field.name }} = {{ field.default }};
+        {%- endif %}
+    {%- endfor %}
+
+struct {{ name }} *
+{{ name }}_init(void)
+{
+    struct {{ name }} *message = malloc(sizeof(struct {{ name }}));
+
+    memcpy(message, &{{ name }}_defaults, sizeof(struct {{ name }}));
+
+    /* TODO: init arrays */
+
+    return message;
+}
+
+void
+{{ name }}_destroy(struct {{ name }} *message)
+{
+    if (message == NULL) {
+        return;
+    }
+
+    {%- for field in message.fields %}
+        {%- if field.modifier == 'repeated' %}
+    /* TODO: free array */
+        {%- elif field.type == 'message' %}
+    {% if field.is_nested %}{{ name }}_{% endif %}{{ field.message_name }}_destroy(message.{{ field.name }});
+        {%- elif field.type in ('string', 'bytes') %}
+    if (message.{{ field.name }} != NULL) {
+        free(message.{{ field.name }});
+    }
+        {%- endif %}
+    {%- endfor %}
+
+    free(message);
+}
+
+void
+{{ name }}_clear(struct {{ name }} *message)
+{
+    memcpy(message, &{{ name }}_defaults, sizeof(struct {{ name }}));
+}
+
+int
+{{ name }}_parse_from_string(struct {{ name }} *message,
+	const uint8_t *buffer, size_t buffer_size)
+{
+    return 0;
+}
+
+int
+{{ name }}_serialize_to_string(struct {{ name }} *message,
+	uint8_t *buffer, size_t buffer_size, size_t *used)
+{
+    return 0;
+}
+
+	{%- for message_name, message_message in message.messages.items() %}
+{{ structdef(name + '_' + message_name, message_message) }}
+	{%- endfor %}
+{%- endmacro %}
+
+{%- for message in messages %}
+{{ structdef(message.name, message) }}
+{%- endfor %}
+
