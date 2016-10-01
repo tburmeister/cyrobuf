@@ -59,9 +59,7 @@ class PyrobufDistribution(Distribution):
 
     def run_commands(self):
         # By now the setup_requires deps have been fetched.
-        if not self.ext_modules:
-            self.ext_modules = list()
-        self.ext_modules.extend(self.cyrobufize_builtins())
+        self.cyrobufize_builtins()
         Distribution.run_commands(self)
 
     def cyrobufize_builtins(self):
@@ -86,7 +84,7 @@ class PyrobufDistribution(Distribution):
         if not self.dry_run:
             with open(path, 'w') as fp:
                 fp.write(templ_c.render(
-                    {'def': listdict, 'version_major': sys.version_info.major, 'format_map': format_map}
+                    {'def': listdict, 'version_major': sys.version_info.major}
                 ))
         if self.verbose >= 1:
             log.info("rendering '%s' from '%s'" % (CYROBUF_LIST_C, templ_c.filename))
@@ -95,7 +93,7 @@ class PyrobufDistribution(Distribution):
         if not self.dry_run:
             with open(path, 'w') as fp:
                 fp.write(templ_h.render(
-                    {'def': listdict, 'version_major': sys.version_info.major, 'format_map': format_map}
+                    {'def': listdict, 'version_major': sys.version_info.major}
                 ))
         if self.verbose >= 1:
             log.info("rendering '%s' from '%s'" % (CYROBUF_LIST_H, templ_h.filename))

@@ -1,0 +1,6 @@
+.eggs
+*.swp
+build
+cyrobuf.egg-info
+dist
+out
