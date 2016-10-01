@@ -40,13 +40,28 @@ struct {{ name }} {
 {%- endfor %}
 };
 
+struct {{ name }}_list {
+    struct {{ name }} **values;
+    size_t len;
+    size_t _size;
+};
+
 struct {{ name }} *{{ name }}_init(void);
 void {{ name }}_destroy(struct {{ name }} *message);
 void {{ name }}_clear(struct {{ name }} *message);
+struct {{ name }} *{{ name }}_copy(struct {{ name }} *message);
 int {{ name }}_parse_from_string(struct {{ name }} *message,
 	const uint8_t *buffer, size_t buffer_size);
 int {{ name }}_serialize_to_string(struct {{ name }} *message,
 	uint8_t *buffer, size_t buffer_size, size_t *used);
+
+void {{ name }}_list_destroy(struct {{ name }}_list *list);
+void {{ name }}_list_copy(struct {{ name }}_list *dest, struct {{ name }}_list *src);
+void {{ name }}_list_append(struct {{ name }}_list *list, struct {{ name }} *message);
+void {{ name }}_list_extend(struct {{ name }}_list *list, struct {{ name }}_list *other);
+void {{ name }}_list_insert(struct {{ name }}_list *list, int i, struct {{ name }} *message);
+struct {{ name }} *{{ name }}_list_pop(struct {{ name }}_list *list);
+int {{ name }}_list_remove(struct {{ name }}_list *list, struct {{ name }} *message);
 {%- endmacro %}
 
 {%- macro enumdef(name, enum) %}

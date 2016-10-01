@@ -3,21 +3,22 @@
 #include "{{ fname }}_proto.h"
 
 {%- macro structdef(name, message) %}
-static const struct {{ name }} {{ name }}_defaults;
+static const struct {{ name }} {{ name }}_defaults = {
     {%- for field in message.fields %}
         {%- if field.default is not none %}
-{{name}}_defaults.{{ field.name }} = {{ field.default }};
+	.{{ field.name }} = {{ field.default }},
         {%- endif %}
     {%- endfor %}
+};
 
 struct {{ name }} *
-{{ name }}_init(void)
+{{ name }}_init()
 {
     struct {{ name }} *message = malloc(sizeof(struct {{ name }}));
 
     memcpy(message, &{{ name }}_defaults, sizeof(struct {{ name }}));
 
-    /* TODO: init arrays */
+    /* Note: lazy init arrays for now */
 
     return message;
 }
@@ -31,9 +32,13 @@ void
 
     {%- for field in message.fields %}
         {%- if field.modifier == 'repeated' %}
-    /* TODO: free array */
+            {%- if field.type == 'message' %}
+    {% if field.is_nested %}{{ name }}{% endif %}{{ field.message_name }}_list_destroy(message.{{ field.name }});
+            {%- else %}
+    {{ field.list_type }}_destroy(&message.{{ field.name }});
+            {%- endif %}
         {%- elif field.type == 'message' %}
-    {% if field.is_nested %}{{ name }}_{% endif %}{{ field.message_name }}_destroy(message.{{ field.name }});
+    {% if field.is_nested %}{{ name }}{% endif %}{{ field.message_name }}_destroy(&message.{{ field.name }});
         {%- elif field.type in ('string', 'bytes') %}
     if (message.{{ field.name }} != NULL) {
         free(message.{{ field.name }});
@@ -50,6 +55,28 @@ void
     memcpy(message, &{{ name }}_defaults, sizeof(struct {{ name }}));
 }
 
+struct {{ name }} *
+{{ name }}_copy(struct {{ name }} *message)
+{
+    struct {{ name }} *out = malloc(sizeof(struct {{ name }}));
+
+    memcpy(out, message, sizeof(struct {{ name }}));
+
+    {%- for field in message.fields %}
+        {%- if field.modifier == 'repeated' %}
+            {%- if field.type == 'message' %}
+    {% if field.is_nested %}{{ name }}{% endif %}{{ field.message_name }}_list_copy(&out.{{ field.name }}, &message.{{ field.name }});
+            {%- else %}
+    {{ field.list_type }}_list_copy(&out.{{ field.name }}, &message.{{ field.name }})
+            {%- endif %}
+        {%- elif field.type == 'message' %}
+    out.{{ field.name }} = {% if field.is_nested %}{{ name }}{% endif %}{{ field.message_name }}_copy(message.{{ field.name }});
+        {%- endif %}
+    {%- endfor %}
+
+    return out;
+}
+
 int
 {{ name }}_parse_from_string(struct {{ name }} *message,
 	const uint8_t *buffer, size_t buffer_size)
@@ -62,6 +89,82 @@ int
 	uint8_t *buffer, size_t buffer_size, size_t *used)
 {
     return 0;
+}
+
+void
+{{ name }}_list_destroy(struct {{ name }}_list *list)
+{
+    /* free elements of list but not the list itself */
+    for (size_t i = 0; i < size_t list->len; i++) {
+        {{ name }}_destroy(list->values[i]);
+    }
+
+    free(list->values);
+
+    list->len = 0;
+    list->_size = 0;
+}
+
+void
+{{ name }}_list_copy(struct {{ name }}_list *dest, struct {{ name }}_list *src)
+{
+    dest->values = realloc(dest->values, src->len * sizeof(struct {{ name }} *));
+    dest->len = dest->_size = src->len;
+
+    for (size_t i = 0; i < size_t src->len; i++) {
+        dest->values[i] = {{ name }}_copy(src->values[i]);
+    }
+}
+
+void
+{{ name }}_list_append(struct {{ name }}_list *list, struct {{ name }} *message)
+{
+    if (list->_size <= list->len) {
+        list->_size = list->_size > 0 ? list->_size << 1 : 4;
+        list->values = realloc(list->values, list->_size * sizeof(struct {{ name }} *));
+    }
+
+    list->values[list->len++] = {{ name }}_copy(message);
+}
+
+void
+{{ name }}_list_extend(struct {{ name }}_list *list, struct {{ name }}_list *other)
+{
+    if (list->_size < list->len + other->len) {
+        list->_size = list->len + other->len
+        list->values = realloc(list->values, list->_size * sizeof(struct {{ name }} *));
+    }
+
+    for (size_t i = 0; i < other->len; i++) {
+        list->values[list->len++] = {{ name }}_copy(other->values[i]);
+    }
+}
+
+void
+{{ name }}_list_insert(struct {{ name }}_list *list, int i, struct {{ name }} *message)
+{
+    if (list->_size <= list->len) {
+        list->_size = list->_size > 0 ? list->_size << 1 : 4;
+        list->values = realloc(list->values, list->_size * sizeof(struct {{ name }} *));
+    }
+
+    for (size_t j = list->len; j > i; j--) {
+        list->values[j] = list->values[j - 1];
+    }
+
+    list->values[i] = {{ name }}_copy(message);
+    list->len++;
+}
+
+struct {{ name }} *
+{{ name }}_list_pop(struct {{ name }}_list *list)
+{
+    return list->values[--list->len];
+}
+
+int
+{{ name }}_list_remove(struct {{ name }}_list *list, struct {{ name }} *message)
+{
 }
 
 	{%- for message_name, message_message in message.messages.items() %}

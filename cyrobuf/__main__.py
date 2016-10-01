@@ -74,6 +74,8 @@ def generate(fname, out, parser, templ_h, templ_c):
     name_c = "%s_proto.c" % m
 
     msgdef = parser.parse_from_filename(fname)
+    msgdef['fname'] = m
+    msgdef['header_block'] = "%s_PROTO_H" % m.upper()
 
     with open(os.path.join(out, name_h), 'w') as fp:
         fp.write(templ_h.render(msgdef, version_major=sys.version_info.major))
