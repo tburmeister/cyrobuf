@@ -5,7 +5,7 @@
 {%- macro structdef(name, message) %}
 static const struct {{ name }} {{ name }}_defaults;
     {%- for field in message.fields %}
-        {%- if field.default is defined %}
+        {%- if field.default is not none %}
 {{name}}_defaults.{{ field.name }} = {{ field.default }};
         {%- endif %}
     {%- endfor %}
@@ -65,7 +65,7 @@ int
 }
 
 	{%- for message_name, message_message in message.messages.items() %}
-{{ structdef(name + '_' + message_name, message_message) }}
+{{ structdef(name + message_name, message_message) }}
 	{%- endfor %}
 {%- endmacro %}
 
