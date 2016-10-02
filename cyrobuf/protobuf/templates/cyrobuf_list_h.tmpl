@@ -1,0 +1,57 @@
+#ifndef CYROBUF_LIST_H
+#define CYROBUF_LIST_H
+
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "cyrobuf_util.h"
+
+struct cyrobuf_string_list {
+    char **values;
+    size_t len;
+    size_t _size;
+};
+
+void cyrobuf_string_list_destroy(struct cyrobuf_string_list *list);
+void cyrobuf_string_list_copy(struct cyrobuf_string_list *dest, struct cyrobuf_string_list *src);
+void cyrobuf_string_list_append(struct cyrobuf_string_list *list, char *item);
+void cyrobuf_string_list_extend(struct cyrobuf_string_list *list, struct cyrobuf_string_list *other);
+void cyrobuf_string_list_insert(struct cyrobuf_string_list *list, int i, char *item);
+char *cyrobuf_string_list_pop(struct cyrobuf_string_list *list);
+
+struct cyrobuf_bytes_list {
+    struct cyrobuf_bytes *values;
+    size_t len;
+    size_t _size;
+};
+
+void cyrobuf_bytes_list_destroy(struct cyrobuf_bytes_list *list);
+void cyrobuf_bytes_list_copy(struct cyrobuf_bytes_list *dest, struct cyrobuf_bytes_list *src);
+void cyrobuf_bytes_list_append(struct cyrobuf_bytes_list *list, struct cyrobuf_bytes *item);
+void cyrobuf_bytes_list_extend(struct cyrobuf_bytes_list *list, struct cyrobuf_bytes_list *other);
+void cyrobuf_bytes_list_insert(struct cyrobuf_bytes_list *list, int i, struct cyrobuf_bytes *item);
+struct cyrobuf_bytes *cyrobuf_bytes_list_pop(struct cyrobuf_bytes_list *list);
+
+{% macro scalar_list(name, type) %}
+struct {{ name }} {
+    {{ type }} *values;
+    size_t len;
+    size_t _size;
+};
+
+void {{ name }}_destroy(struct {{ name }} *list);
+void {{ name }}_copy(struct {{ name }} *dest, struct {{ name }} *src);
+void {{ name }}_append(struct {{ name }} *list, {{ type }} item);
+void {{ name }}_extend(struct {{ name }} *list, struct {{ name }} *other);
+void {{ name }}_insert(struct {{ name }} *list, int i, {{ type }} item);
+{{ type }} {{ name }}_pop(struct {{ name }} *list);
+{% endmacro %}
+
+{% for name, type in def.items() %}
+{{ scalar_list(name, type) }}
+{% endfor %}
+
+#endif
+

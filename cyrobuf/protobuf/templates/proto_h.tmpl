@@ -29,7 +29,7 @@ struct {{ name }} {
 	{%- elif field.type == 'string' %}
 	char *{{ field.name }};
 	{%- elif field.type == 'bytes' %}
-	uint8_t *{{ field.name }};
+	struct cyrobuf_bytes *{{ field.name }};
 	{%- elif field.type == 'message' %}
 	struct {% if field.is_nested %}{{ name }}{% endif %}{{ field.message_name }} {{ field.name }};
 	{%- elif field.type == 'enum' %}
@@ -67,7 +67,8 @@ int {{ name }}_list_remove(struct {{ name }}_list *list, struct {{ name }} *mess
 {%- macro enumdef(name, enum) %}
 enum {{ name }} {
 	{%- for field in enum.fields %}
-	{{ field.name }} = {{ field.value }},
+	{{ field.name }} = {{ field.value }}
+        {%- if not loop.last %},{% endif %}
 	{%- endfor %}
 };
 {%- endmacro %}

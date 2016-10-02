@@ -70,14 +70,13 @@ class PyrobufDistribution(Distribution):
         templ_c = env.get_template('cyrobuf_list_c.tmpl')
 
         listdict = {
-            'DoubleList':   'double',
-            'FloatList':    'float',
-            'IntList':      'int',
-            'Int32List':    'int32_t',
-            'Uint32List':   'uint32_t',
-            'Int64List':    'int64_t',
-            'Uint64List':   'uint64_t',
-            'CharList':     'char'
+            'cyrobuf_double_list':   'double',
+            'cyrobuf_float_list':    'float',
+            'cyrobuf_int_list':      'int',
+            'cyrobuf_int32_list':    'int32_t',
+            'cyrobuf_uint32_list':   'uint32_t',
+            'cyrobuf_int64_list':    'int64_t',
+            'cyrobuf_uint64_list':   'uint64_t',
         }
 
         path = os.path.join(HERE, 'cyrobuf', 'src', CYROBUF_LIST_C)

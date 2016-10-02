@@ -31,6 +31,24 @@ def cli_argument_parser():
 def gen_message(fname, out="out", build="build", install=False):
 
     parser = Parser()
+    parser.list_type_map = {
+        'float':    'cyrobuf_float_list',
+        'double':   'cyrobuf_double_list',
+        'enum':     'cyrobuf_int32_list',
+        'int32':    'cyrobuf_int32_list',
+        'sint32':   'cyrobuf_int32_list',
+        'sfixed32': 'cyrobuf_int32_list',
+        'uint32':   'cyrobuf_uint32_list',
+        'fixed32':  'cyrobuf_uint32_list',
+        'bool':     'cyrobuf_uint32_list',
+        'int64':    'cyrobuf_int64_list',
+        'sint64':   'cyrobuf_int64_list',
+        'sfixed64': 'cyrobuf_int64_list',
+        'uint64':   'cyrobuf_uint64_list',
+        'fixed64':  'cyrobuf_uint64_list',
+        'string':   'cyrobuf_string_list',
+        'bytes':    'cyrobuf_bytes_list'
+    }
 
     env = Environment(loader=PackageLoader('cyrobuf.protobuf', 'templates'))
     templ_h = env.get_template('proto_h.tmpl')

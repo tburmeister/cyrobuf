@@ -2,12 +2,18 @@
 
 #include "{{ fname }}_proto.h"
 
+/* TODO: string defaults */
 {%- macro structdef(name, message) %}
 static const struct {{ name }} {{ name }}_defaults = {
     {%- for field in message.fields %}
-        {%- if field.default is not none %}
-	.{{ field.name }} = {{ field.default }},
+        {%- if field.modifier == 'repeated' %}
+    .{{ field.name }} = { 0 }
+        {%- elif field.type in ('message', 'string') %}
+    .{{ field.name }} = NULL
+        {%- else %}
+	.{{ field.name }} = {{ field.default|default('0', true) }}
         {%- endif %}
+        {%- if not loop.last %},{% endif %}
     {%- endfor %}
 };
 
