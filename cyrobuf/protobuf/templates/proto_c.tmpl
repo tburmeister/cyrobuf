@@ -73,10 +73,10 @@ struct {{ name }} *
             {%- if field.type == 'message' %}
     {% if field.is_nested %}{{ name }}{% endif %}{{ field.message_name }}_list_copy(&out->{{ field.name }}, &message->{{ field.name }});
             {%- else %}
-    {{ field.list_type }}_list_copy(&out->{{ field.name }}, &message->{{ field.name }})
+    {{ field.list_type }}_copy(&out->{{ field.name }}, &message->{{ field.name }});
             {%- endif %}
         {%- elif field.type == 'message' %}
-    out->{{ field.name }} = {% if field.is_nested %}{{ name }}{% endif %}{{ field.message_name }}_copy(message.{{ field.name }});
+    out->{{ field.name }} = {% if field.is_nested %}{{ name }}{% endif %}{{ field.message_name }}_copy(message->{{ field.name }});
         {%- endif %}
     {%- endfor %}
 
@@ -101,7 +101,7 @@ void
 {{ name }}_list_destroy(struct {{ name }}_list *list)
 {
     /* free elements of list but not the list itself */
-    for (size_t i = 0; i < size_t list->len; i++) {
+    for (size_t i = 0; i < list->len; i++) {
         {{ name }}_destroy(list->values[i]);
     }
 
@@ -117,7 +117,7 @@ void
     dest->values = realloc(dest->values, src->len * sizeof(struct {{ name }} *));
     dest->len = dest->_size = src->len;
 
-    for (size_t i = 0; i < size_t src->len; i++) {
+    for (size_t i = 0; i < src->len; i++) {
         dest->values[i] = {{ name }}_copy(src->values[i]);
     }
 }
@@ -137,7 +137,7 @@ void
 {{ name }}_list_extend(struct {{ name }}_list *list, struct {{ name }}_list *other)
 {
     if (list->_size < list->len + other->len) {
-        list->_size = list->len + other->len
+        list->_size = list->len + other->len;
         list->values = realloc(list->values, list->_size * sizeof(struct {{ name }} *));
     }
 
@@ -171,7 +171,9 @@ struct {{ name }} *
 int
 {{ name }}_list_remove(struct {{ name }}_list *list, struct {{ name }} *message)
 {
-    for (size_t i = 0; i < list->len; i++) {
+    size_t i;
+
+    for (i = 0; i < list->len; i++) {
         if (list->values[i] == message) {
             break;
         }

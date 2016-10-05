@@ -25,13 +25,17 @@
 struct {{ name }} {
 {% for field in message.fields|sort(attribute='index') -%}
 	{%- if field.modifier == 'repeated' %}
+        {%- if field.type == 'message' %}
+    struct {% if field.is_nested %}{{ name }}{% endif %}{{ field.message_name }}_list {{ field.name }};
+        {%- else %}
 	struct {{ field.list_type }} {{ field.name }};
+        {%- endif %}
 	{%- elif field.type == 'string' %}
 	char *{{ field.name }};
 	{%- elif field.type == 'bytes' %}
 	struct cyrobuf_bytes *{{ field.name }};
 	{%- elif field.type == 'message' %}
-	struct {% if field.is_nested %}{{ name }}{% endif %}{{ field.message_name }} {{ field.name }};
+	struct {% if field.is_nested %}{{ name }}{% endif %}{{ field.message_name }} *{{ field.name }};
 	{%- elif field.type == 'enum' %}
 	enum {% if field.is_nested %}{{ name }}{% endif %}{{ field.enum_name }} {{ field.name }};
 	{%- else %}
