@@ -1,0 +1,216 @@
+#include "cyrobuf_list.h"
+
+void
+cyrobuf_string_list_destroy(struct cyrobuf_string_list *list)
+{
+    /* free elements of list but not the list itself */
+    for (size_t i = 0; i < list->len; i++) {
+        free(list->values[i]);
+    }
+
+    free(list->values);
+
+    list->len = 0;
+    list->_size = 0;
+}
+
+void
+cyrobuf_string_list_copy(struct cyrobuf_string_list *dest, struct cyrobuf_string_list *src)
+{
+    dest->values = realloc(dest->values, src->len * sizeof(char *));
+    dest->len = dest->_size = src->len;
+
+    for (size_t i = 0; i < src->len; i++) {
+        dest->values[i] = strdup(src->values[i]);
+    }
+}
+
+void
+cyrobuf_string_list_append(struct cyrobuf_string_list *list, char *item)
+{
+    if (list->_size <= list->len) {
+        list->_size = list->_size > 0 ? list->_size << 1 : 4;
+        list->values = realloc(list->values, list->_size * sizeof(char *));
+    }
+
+    list->values[list->len++] = strdup(item);
+}
+
+void
+cyrobuf_string_list_extend(struct cyrobuf_string_list *list, struct cyrobuf_string_list *other)
+{
+    if (list->_size < list->len + other->len) {
+        list->_size = list->len + other->len;
+        list->values = realloc(list->values, list->_size * sizeof(char *));
+    }
+
+    for (size_t i = 0; i < other->len; i++) {
+        list->values[list->len++] = strdup(other->values[i]);
+    }
+}
+
+void
+cyrobuf_string_list_insert(struct cyrobuf_string_list *list, int i, char *item)
+{
+    if (list->_size <= list->len) {
+        list->_size = list->_size > 0 ? list->_size << 1 : 4;
+        list->values = realloc(list->values, list->_size * sizeof(char *));
+    }
+
+    for (size_t j = list->len; j > i; j--) {
+        list->values[j] = list->values[j - 1];
+    }
+
+    list->values[i] = strdup(item);
+    list->len++;
+}
+
+char *
+cyrobuf_string_list_pop(struct cyrobuf_string_list *list)
+{
+    return list->values[--list->len];
+}
+
+void
+cyrobuf_bytes_list_destroy(struct cyrobuf_bytes_list *list)
+{
+    /* free elements of list but not the list itself */
+    for (size_t i = 0; i < list->len; i++) {
+        cyrobuf_bytes_destroy(list->values[i]);
+    }
+
+    free(list->values);
+
+    list->len = 0;
+    list->_size = 0;
+}
+
+void
+cyrobuf_bytes_list_copy(struct cyrobuf_bytes_list *dest, struct cyrobuf_bytes_list *src)
+{
+    dest->values = realloc(dest->values, src->len * sizeof(struct cyrobuf_bytes *));
+    dest->len = dest->_size = src->len;
+
+    for (size_t i = 0; i < src->len; i++) {
+        dest->values[i] = cyrobuf_bytes_copy(src->values[i]);
+    }
+}
+
+void
+cyrobuf_bytes_list_append(struct cyrobuf_bytes_list *list, struct cyrobuf_bytes *item)
+{
+    if (list->_size <= list->len) {
+        list->_size = list->_size > 0 ? list->_size << 1 : 4;
+        list->values = realloc(list->values, list->_size * sizeof(struct cyrobuf_bytes *));
+    }
+
+    list->values[list->len++] = cyrobuf_bytes_copy(item);
+}
+
+void
+cyrobuf_bytes_list_extend(struct cyrobuf_bytes_list *list, struct cyrobuf_bytes_list *other)
+{
+    if (list->_size < list->len + other->len) {
+        list->_size = list->len + other->len;
+        list->values = realloc(list->values, list->_size * sizeof(struct cyrobuf_bytes *));
+    }
+
+    for (size_t i = 0; i < other->len; i++) {
+        list->values[list->len++] = cyrobuf_bytes_copy(other->values[i]);
+    }
+}
+
+void
+cyrobuf_bytes_list_insert(struct cyrobuf_bytes_list *list, int i, struct cyrobuf_bytes *item)
+{
+    if (list->_size <= list->len) {
+        list->_size = list->_size > 0 ? list->_size << 1 : 4;
+        list->values = realloc(list->values, list->_size * sizeof(struct cyrobuf_bytes *));
+    }
+
+    for (size_t j = list->len; j > i; j--) {
+        list->values[j] = list->values[j - 1];
+    }
+
+    list->values[i] = cyrobuf_bytes_copy(item);
+    list->len++;
+}
+
+struct cyrobuf_bytes *
+cyrobuf_bytes_list_pop(struct cyrobuf_bytes_list *list)
+{
+    return list->values[--list->len];
+}
+
+{% macro scalar_list(name, type) %}
+void
+{{ name }}_destroy(struct {{ name }} *list)
+{
+    free(list->values);
+
+    list->len = 0;
+    list->_size = 0;
+}
+
+void
+{{ name }}_copy(struct {{ name }} *dest, struct {{ name }} *src)
+{
+    dest->values = realloc(dest->values, src->len * sizeof({{ type }}));
+    dest->len = dest->_size = src->len;
+
+    for (size_t i = 0; i < src->len; i++) {
+        dest->values[i] = src->values[i];
+    }
+}
+
+void
+{{ name }}_append(struct {{ name }} *list, {{ type }} item)
+{
+    if (list->_size <= list->len) {
+        list->_size = list->_size > 0 ? list->_size << 1 : 4;
+        list->values = realloc(list->values, list->_size * sizeof({{ type }}));
+    }
+
+    list->values[list->len++] = item;
+}
+
+void
+{{ name }}_extend(struct {{ name }} *list, struct {{ name }} *other)
+{
+    if (list->_size < list->len + other->len) {
+        list->_size = list->len + other->len;
+        list->values = realloc(list->values, list->_size * sizeof({{ type }}));
+    }
+
+    for (size_t i = 0; i < other->len; i++) {
+        list->values[list->len++] = other->values[i];
+    }
+}
+
+void
+{{ name }}_insert(struct {{ name }} *list, int i, {{ type }} item)
+{
+    if (list->_size <= list->len) {
+        list->_size = list->_size > 0 ? list->_size << 1 : 4;
+        list->values = realloc(list->values, list->_size * sizeof({{ type }}));
+    }
+
+    for (size_t j = list->len; j > i; j--) {
+        list->values[j] = list->values[j - 1];
+    }
+
+    list->values[i] = item;
+    list->len++;
+}
+
+{{ type }}
+{{ name }}_pop(struct {{ name }} *list)
+{
+    return list->values[--list->len];
+}
+{% endmacro %}
+
+{% for name, type in def.items() %}
+{{ scalar_list(name, type) }}
+{% endfor %}
+

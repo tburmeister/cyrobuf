@@ -22,7 +22,7 @@ void cyrobuf_string_list_insert(struct cyrobuf_string_list *list, int i, char *i
 char *cyrobuf_string_list_pop(struct cyrobuf_string_list *list);
 
 struct cyrobuf_bytes_list {
-    struct cyrobuf_bytes *values;
+    struct cyrobuf_bytes **values;
     size_t len;
     size_t _size;
 };
