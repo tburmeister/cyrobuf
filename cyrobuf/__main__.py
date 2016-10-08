@@ -82,6 +82,31 @@ def gen_message(fname, out="out", build="build", install=False):
 
     setup(name=name, script_args=script_args)
 
+def add_str_formats(message):
+    str_format_map = {
+        'float':    '%f',
+        'double':   '%f',
+        'enum':     '%d',
+        'int32':    '%d',
+        'sint32':   '%d',
+        'sfixed32': '%d',
+        'uint32':   '%u',
+        'fixed32':  '%u',
+        'bool':     '%u',
+        'int64':    '%lld',
+        'sint64':   '%lld',
+        'sfixed64': '%lld',
+        'uint64':   '%llu',
+        'fixed64':  '%llu',
+        'string':   '%s'
+    }
+
+    for field in message.fields:
+        field.str_format = str_format_map.get(field.type)
+
+    for submessage in message.messages.values():
+        add_str_formats(submessage)
+
 def generate(fname, out, parser, templ_h, templ_c):
 
     print("generating {0}".format(fname))
@@ -94,6 +119,8 @@ def generate(fname, out, parser, templ_h, templ_c):
     msgdef = parser.parse_from_filename(fname)
     msgdef['fname'] = m
     msgdef['header_block'] = "%s_PROTO_H" % m.upper()
+    for message in msgdef['messages']:
+        add_str_formats(message)
 
     with open(os.path.join(out, name_h), 'w') as fp:
         fp.write(templ_h.render(msgdef, version_major=sys.version_info.major))

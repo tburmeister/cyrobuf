@@ -7,8 +7,8 @@ int main(int argc, char **argv)
 {
 	struct Test *test = Test_init();
 
-	printf("timetsamp: %u\n", test->timestamp);
-    printf("string_field: %s\n", test->string_field);
+    Test_print(test, 0);
+    printf("\n");
 
 	Test_destroy(test);
 

@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <string.h>
 
 #include "{{ fname }}_proto.h"
@@ -101,6 +102,57 @@ int
 	uint8_t *buffer, size_t buffer_size, size_t *used)
 {
     return 0;
+}
+
+void
+{{ name }}_print(struct {{ name }} *message, size_t indent)
+{
+    char leader[64] = { 0 };
+
+    for (size_t i = 0; i < indent; i++) {
+        leader[i] = '\t';
+    }
+
+    printf("%s%s: {\n", leader, "{{ name }}");
+    {% for field in message.fields|sort(attribute='index') -%}
+    printf("%s\t%s: ", leader, "{{ field.name }}");
+        {%- if field.modifier == 'repeated' %}
+    printf("[");
+    for (size_t i = 0; i < message->{{ field.name }}.len; i++) {
+            {%- if field.type == 'message' %}
+        printf("\n");
+        {% if field.is_nested %}{{ name }}{% endif %}{{ field.message_name }}_print(message->{{ field.name }}.values[i], indent + 3);
+            {%- elif field.type != 'bytes' %}
+        printf("{{ field.str_format }}", message->{{ field.name }}.values[i]);
+            {%- endif %}
+        if (i < message->{{ field.name }}.len - 1) {
+            printf(",");
+        }
+    }
+            {%- if field.type == 'message' %}
+        printf("\n%s\t]\n", leader);
+            {%- else %}
+        printf("]\n");
+            {%- endif %}
+        {%- elif field.type == 'message' %}
+    if (message->{{ field.name }} != NULL) {
+        printf("\n");
+        {% if field.is_nested %}{{ name }}{% endif %}{{ field.message_name }}_print(message->{{ field.name }}, indent + 2);
+    } else {
+        printf("NULL");
+    }
+    printf("\n");
+        {%- elif field.type == 'string' %}
+    if (message->{{ field.name }} != NULL) {
+        printf("%s\n", message->{{ field.name }});
+    } else {
+        printf("NULL");
+    }
+        {%- elif field.type != 'bytes' %}
+    printf("{{ field.str_format }}\n", message->{{ field.name }});
+        {%- endif %}
+    {%- endfor %}
+    printf("%s}", leader);
 }
 
 void
