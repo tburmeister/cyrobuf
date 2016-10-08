@@ -155,7 +155,7 @@ int
             *offset += field_size;
                 {%- elif field.type == 'bytes' %}
             field_size = (size_t)get_varint64(buffer, offset);
-            {{ field.name }}_elt = calloc(sizeof(struct cyrobuf_bytes) + field_size);
+            {{ field.name }}_elt = calloc(1, sizeof(struct cyrobuf_bytes) + field_size);
             {{ field.name }}_elt->len = field_size;
             memcpy({{ field.name }}_elt->data, (buffer + *offset), field_size);
             cyrobuf_bytes_list_append(&message->{{ field.name }}, {{ field.name }}_elt);
@@ -171,6 +171,31 @@ int
             {%- endif %}
 
         {%- elif field.type == 'message' %}
+            field_size = (size_t)get_varint64(buffer, offset);
+            {% if field.is_nested %}{{ name }}{% endif %}{{ field.message_name }}_parse_from_string(message->{{ field.name }}, buffer, field_size, offset);
+
+        {%- elif field.type == 'string' %}
+            field_size = (size_t)get_varint64(buffer, offset);
+            message->{{ field.name }} = strndup((char *)(buffer + *offset), field_size);
+            *offset += field_size;
+
+        {%- elif field.type == 'bytes' %}
+            field_size = (size_t)get_varint64(buffer, offset);
+            message->{{ field.name }} = calloc(1, sizeof(struct cyrobuf_bytes) + field_size);
+            message->{{ field.name }}->len = field_size;
+            memcpy(message->{{ field.name }}->data, (buffer + *offset), field_size);
+            *offset += field_size;
+
+        {%- elif field.type == 'enum' %}
+            message->{{ field.name }} = (enum {% if field.is_nested %}{{ name }}{% endif %}{{ field.enum_name }}){{ field.getter }}(buffer, offset);
+
+        {%- elif field.fixed_width == true %}
+            message->{{ field.name }} = *({{ field.c_type }} *)(buffer + *offset);
+            *offset += sizeof({{ field.c_type }});
+
+        {%- elif field.var_width == true %}
+            message->{{ field.name }} = {{ field.getter }}(buffer, offset);
+
         {%- endif %}
             break;
     {%- endfor %}
