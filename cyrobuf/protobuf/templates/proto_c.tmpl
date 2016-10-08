@@ -107,32 +107,33 @@ int
 void
 {{ name }}_print(struct {{ name }} *message, size_t indent)
 {
-    char leader[64] = { 0 };
+    char leader[MAX_INDENT] = { 0 };
+    indent = indent < MAX_INDENT ? indent : MAX_INDENT - 1;
 
     for (size_t i = 0; i < indent; i++) {
         leader[i] = '\t';
     }
 
     printf("%s%s: {\n", leader, "{{ name }}");
-    {% for field in message.fields|sort(attribute='index') -%}
+    {%- for field in message.fields|sort(attribute='index') %}
     printf("%s\t%s: ", leader, "{{ field.name }}");
         {%- if field.modifier == 'repeated' %}
     printf("[");
     for (size_t i = 0; i < message->{{ field.name }}.len; i++) {
             {%- if field.type == 'message' %}
         printf("\n");
-        {% if field.is_nested %}{{ name }}{% endif %}{{ field.message_name }}_print(message->{{ field.name }}.values[i], indent + 3);
+        {% if field.is_nested %}{{ name }}{% endif %}{{ field.message_name }}_print(message->{{ field.name }}.values[i], indent + 2);
             {%- elif field.type != 'bytes' %}
         printf("{{ field.str_format }}", message->{{ field.name }}.values[i]);
             {%- endif %}
         if (i < message->{{ field.name }}.len - 1) {
-            printf(",");
+            printf(", ");
         }
     }
             {%- if field.type == 'message' %}
-        printf("\n%s\t]\n", leader);
+    printf("\n%s\t]\n", leader);
             {%- else %}
-        printf("]\n");
+    printf("]\n");
             {%- endif %}
         {%- elif field.type == 'message' %}
     if (message->{{ field.name }} != NULL) {
@@ -146,7 +147,7 @@ void
     if (message->{{ field.name }} != NULL) {
         printf("%s\n", message->{{ field.name }});
     } else {
-        printf("NULL");
+        printf("NULL\n");
     }
         {%- elif field.type != 'bytes' %}
     printf("{{ field.str_format }}\n", message->{{ field.name }});

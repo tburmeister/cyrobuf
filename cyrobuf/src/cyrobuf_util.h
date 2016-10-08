@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#define MAX_INDENT 64
+
 struct cyrobuf_bytes {
     size_t len;
     uint8_t data[];
