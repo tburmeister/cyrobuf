@@ -3,7 +3,7 @@ import "test_ref_message.proto";
 message Test {
     optional uint32 timestamp = 1;
     optional int64 field = 2;
-	optional string string_field = 3;
+	optional string string_field = 3 [default = "Hello!"];
 	repeated int64 list_fieldx = 4;
 
     message Ss1 {

@@ -2,14 +2,15 @@
 
 #include "{{ fname }}_proto.h"
 
-/* TODO: string defaults */
 {%- macro structdef(name, message) %}
 static const struct {{ name }} {{ name }}_defaults = {
     {%- for field in message.fields %}
         {%- if field.modifier == 'repeated' %}
     .{{ field.name }} = { 0 }
-        {%- elif field.type in ('message', 'string') %}
+        {%- elif field.type in ('message', 'bytes') %}
     .{{ field.name }} = NULL
+        {%- elif field.type == 'string' %}
+    .{{ field.name }} = {{ field.default|default('NULL', true) }}
         {%- else %}
 	.{{ field.name }} = {{ field.default|default('0', true) }}
         {%- endif %}
@@ -45,8 +46,13 @@ void
             {%- endif %}
         {%- elif field.type == 'message' %}
     {% if field.is_nested %}{{ name }}{% endif %}{{ field.message_name }}_destroy(message->{{ field.name }});
-        {%- elif field.type in ('string', 'bytes') %}
+        {%- elif field.type == 'bytes' %}
     if (message->{{ field.name }} != NULL) {
+        free(message->{{ field.name }});
+    }
+        {%- elif field.type == 'string' %}
+    /* yes, pointer comparison */
+    if (message->{{ field.name }} != {{ name }}_defaults.{{ field.name }}) {
         free(message->{{ field.name }});
     }
         {%- endif %}
