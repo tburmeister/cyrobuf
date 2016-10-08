@@ -37,6 +37,17 @@ cyrobuf_string_list_append(struct cyrobuf_string_list *list, char *item)
 }
 
 void
+cyrobuf_string_list_append_unsafe(struct cyrobuf_string_list *list, char *item)
+{
+    if (list->_size <= list->len) {
+        list->_size = list->_size > 0 ? list->_size << 1 : 4;
+        list->values = realloc(list->values, list->_size * sizeof(char *));
+    }
+
+    list->values[list->len++] = item;
+}
+
+void
 cyrobuf_string_list_extend(struct cyrobuf_string_list *list, struct cyrobuf_string_list *other)
 {
     if (list->_size < list->len + other->len) {
@@ -105,6 +116,17 @@ cyrobuf_bytes_list_append(struct cyrobuf_bytes_list *list, struct cyrobuf_bytes 
     }
 
     list->values[list->len++] = cyrobuf_bytes_copy(item);
+}
+
+void
+cyrobuf_bytes_list_append_unsafe(struct cyrobuf_bytes_list *list, struct cyrobuf_bytes *item)
+{
+    if (list->_size <= list->len) {
+        list->_size = list->_size > 0 ? list->_size << 1 : 4;
+        list->values = realloc(list->values, list->_size * sizeof(struct cyrobuf_bytes *));
+    }
+
+    list->values[list->len++] = item;
 }
 
 void

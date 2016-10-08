@@ -10,7 +10,7 @@ int main(int argc, char **argv)
     cyrobuf_int64_list_append(&test->list_fieldx, 6);
     test->substruct = TestSs1_init();
     test->test_ref = TestRef_init();
-    TestRef_list_append(&test->list_ref, test->test_ref);
+    TestRef_list_append(&test->list_ref, TestRef_init());
 
     Test_print(test, 0);
     printf("\n");

@@ -63,6 +63,7 @@ void {{ name }}_print(struct {{ name }} *message, size_t indent);
 void {{ name }}_list_destroy(struct {{ name }}_list *list);
 void {{ name }}_list_copy(struct {{ name }}_list *dest, struct {{ name }}_list *src);
 void {{ name }}_list_append(struct {{ name }}_list *list, struct {{ name }} *message);
+void {{ name }}_list_append_unsafe(struct {{ name }}_list *list, struct {{ name }} *message);
 void {{ name }}_list_extend(struct {{ name }}_list *list, struct {{ name }}_list *other);
 void {{ name }}_list_insert(struct {{ name }}_list *list, int i, struct {{ name }} *message);
 struct {{ name }} *{{ name }}_list_pop(struct {{ name }}_list *list);

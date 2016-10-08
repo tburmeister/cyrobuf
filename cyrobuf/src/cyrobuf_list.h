@@ -17,6 +17,7 @@ struct cyrobuf_string_list {
 void cyrobuf_string_list_destroy(struct cyrobuf_string_list *list);
 void cyrobuf_string_list_copy(struct cyrobuf_string_list *dest, struct cyrobuf_string_list *src);
 void cyrobuf_string_list_append(struct cyrobuf_string_list *list, char *item);
+void cyrobuf_string_list_append_unsafe(struct cyrobuf_string_list *list, char *item);
 void cyrobuf_string_list_extend(struct cyrobuf_string_list *list, struct cyrobuf_string_list *other);
 void cyrobuf_string_list_insert(struct cyrobuf_string_list *list, int i, char *item);
 char *cyrobuf_string_list_pop(struct cyrobuf_string_list *list);
@@ -30,6 +31,7 @@ struct cyrobuf_bytes_list {
 void cyrobuf_bytes_list_destroy(struct cyrobuf_bytes_list *list);
 void cyrobuf_bytes_list_copy(struct cyrobuf_bytes_list *dest, struct cyrobuf_bytes_list *src);
 void cyrobuf_bytes_list_append(struct cyrobuf_bytes_list *list, struct cyrobuf_bytes *item);
+void cyrobuf_bytes_list_append_unsafe(struct cyrobuf_bytes_list *list, struct cyrobuf_bytes *item);
 void cyrobuf_bytes_list_extend(struct cyrobuf_bytes_list *list, struct cyrobuf_bytes_list *other);
 void cyrobuf_bytes_list_insert(struct cyrobuf_bytes_list *list, int i, struct cyrobuf_bytes *item);
 struct cyrobuf_bytes *cyrobuf_bytes_list_pop(struct cyrobuf_bytes_list *list);
