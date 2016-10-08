@@ -92,8 +92,94 @@ struct {{ name }} *
 
 int
 {{ name }}_parse_from_string(struct {{ name }} *message,
-	const uint8_t *buffer, size_t buffer_size)
+	const uint8_t *buffer, size_t buffer_size, size_t *offset)
 {
+    int64_t key;
+    int64_t field_idx;
+    {%- if message.fields|selectattr('type', 'equalto', 'message')|first is defined or
+           message.fields|selectattr('type', 'equalto', 'string')|first is defined or
+           message.fields|selectattr('type', 'equalto', 'bytes')|first is defined %}
+    size_t field_size;
+    {%- endif %}
+
+    {%- for field in message.fields|sort(attribute='index') %}
+        {%- if field.modifier == 'repeated' and field.packed|default(false) == true %}
+    int64_t {{ field.name }}_marker;
+        {%- endif %}
+        {%- if field.modifier == 'repeated' %}
+            {%- if field.type == 'message' %}
+    struct {% if field.is_nested %}{{ name }}{% endif %}{{ field.message_name }} *{{ field.name }}_elt;
+            {%- elif field.type == 'string' %}
+    char *{{ field.name }}_elt;
+            {%- elif field.type == 'bytes' %}
+    struct cyrobuf_bytes *{{ field.name }}_elt;
+            {%- else  %}
+    {{ field.c_type }} {{ field.name }}_elt;
+            {%- endif %}
+        {%- endif %}
+    {%- endfor %}
+
+    {% if message.fields|count > 0 %}
+    while (*offset < buffer_size) {
+        key = get_varint64(buffer, offset);
+        field_idx = (key >> 3);
+
+        switch (field_idx) {
+    {%- for field in message.fields|sort(attribute='index') %}
+        /* {{ field.name }} */
+        case {{ field.index }}:
+        {%- if field.modifier == 'repeated' %}
+            {%- if field.packed|default(false) == true %}
+            {{ field.name }}_marker = get_varint64(buffer, offset);
+            {{ field.name }}_marker += *offset;
+
+            while (*offset < {{ field.name }}_marker) {
+                {%- if field.fixed_width == true %}
+                {{ field.name }}_elt = *({{ field.c_type }} *)(buffer + *offset);
+                *offset += sizeof({{ field.c_type }});
+                {%- elif field.var_width == true %}
+                {{ field.name }}_elt = {{ field.getter }}(buffer, offset);
+                {%- endif %}
+                {{ field.list_type }}_append(&message->{{ field.name }}, {{ field.name }}_elt);
+            }
+            {%- else %}
+                {%- if field.type == 'message' %}
+            {{ field.name }}_elt = {% if field.is_nested %}{{ name }}{% endif %}{{ field.message_name }}_init();
+            field_size = (size_t)get_varint64(buffer, offset);
+            {% if field.is_nested %}{{ name }}{% endif %}{{ field.message_name }}_parse_from_string({{ field.name }}_elt, buffer, field_size, offset);
+            {% if field.is_nested %}{{ name }}{% endif %}{{ field.message_name }}_list_append(&message->{{ field.name }}, {{ field.name }}_elt);
+                {%- elif field.type == 'string' %}
+            field_size = (size_t)get_varint64(buffer, offset);
+            {{ field.name }}_elt = strndup((char *)(buffer + *offset), field_size);
+            cyrobuf_string_list_append(&message->{{ field.name }}, {{ field.name }}_elt);
+            *offset += field_size;
+                {%- elif field.type == 'bytes' %}
+            field_size = (size_t)get_varint64(buffer, offset);
+            {{ field.name }}_elt = calloc(sizeof(struct cyrobuf_bytes) + field_size);
+            {{ field.name }}_elt->len = field_size;
+            memcpy({{ field.name }}_elt->data, (buffer + *offset), field_size);
+            cyrobuf_bytes_list_append(&message->{{ field.name }}, {{ field.name }}_elt);
+            *offset += field_size;
+                {%- elif field.fixed_width == true %}
+            {{ field.name }}_elt = *({{ field.c_type }} *)(buffer + *offset);
+            {{ field.list_type }}_append(&message->{{ field.name }}, {{ field.name }}_elt);
+            *offset += sizeof({{ field.c_type }});
+                {%- elif field.var_width == true %}
+            {{ field.name }}_elt = {{ field.getter }}(buffer, offset);
+            {{ field.list_type }}_append(&message->{{ field.name }}, {{ field.name }}_elt);
+                {%- endif %}
+            {%- endif %}
+
+        {%- elif field.type == 'message' %}
+        {%- endif %}
+            break;
+    {%- endfor %}
+        default:
+            return 1;
+        }
+    }
+    {%- endif %}
+
     return 0;
 }
 

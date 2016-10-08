@@ -4,7 +4,7 @@ message Test {
     optional uint32 timestamp = 1;
     optional int64 field = 2;
 	optional string string_field = 3 [default = "Hello!"];
-	repeated int64 list_fieldx = 4;
+	repeated int64 list_fieldx = 4 [packed = true];
 
     message Ss1 {
     	optional int64 field1 = 1 [default = 12345];
