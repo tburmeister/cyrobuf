@@ -55,7 +55,7 @@ void {{ name }}_destroy(struct {{ name }} *message);
 void {{ name }}_clear(struct {{ name }} *message);
 struct {{ name }} *{{ name }}_copy(struct {{ name }} *message);
 int {{ name }}_parse_from_string(struct {{ name }} *message,
-	const uint8_t *buffer, size_t buffer_size, size_t *offset);
+	const uint8_t *buffer, size_t max_offset, size_t *offset);
 int {{ name }}_serialize_to_string(struct {{ name }} *message,
 	uint8_t *buffer, size_t buffer_size, size_t *used);
 void {{ name }}_print(struct {{ name }} *message, size_t indent);

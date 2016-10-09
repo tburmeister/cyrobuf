@@ -92,7 +92,7 @@ struct {{ name }} *
 
 int
 {{ name }}_parse_from_string(struct {{ name }} *message,
-	const uint8_t *buffer, size_t buffer_size, size_t *offset)
+	const uint8_t *buffer, size_t max_offset, size_t *offset)
 {
     int64_t key;
     int64_t field_idx;
@@ -120,7 +120,7 @@ int
     {%- endfor %}
 
     {% if message.fields|count > 0 %}
-    while (*offset < buffer_size) {
+    while (*offset < max_offset) {
         key = get_varint64(buffer, offset);
         field_idx = (key >> 3);
 
@@ -146,7 +146,7 @@ int
                 {%- if field.type == 'message' %}
             {{ field.name }}_elt = {% if field.is_nested %}{{ name }}{% endif %}{{ field.message_name }}_init();
             field_size = (size_t)get_varint64(buffer, offset);
-            {% if field.is_nested %}{{ name }}{% endif %}{{ field.message_name }}_parse_from_string({{ field.name }}_elt, buffer, field_size, offset);
+            {% if field.is_nested %}{{ name }}{% endif %}{{ field.message_name }}_parse_from_string({{ field.name }}_elt, buffer, *offset + field_size, offset);
             {% if field.is_nested %}{{ name }}{% endif %}{{ field.message_name }}_list_append_unsafe(&message->{{ field.name }}, {{ field.name }}_elt);
 
                 {%- elif field.type == 'string' %}
@@ -175,8 +175,11 @@ int
             {%- endif %}
 
         {%- elif field.type == 'message' %}
+            if (message->{{ field.name }} == NULL) {
+                message->{{ field.name }} = {% if field.is_nested %}{{ name }}{% endif %}{{ field.message_name }}_init();
+            }
             field_size = (size_t)get_varint64(buffer, offset);
-            {% if field.is_nested %}{{ name }}{% endif %}{{ field.message_name }}_parse_from_string(message->{{ field.name }}, buffer, field_size, offset);
+            {% if field.is_nested %}{{ name }}{% endif %}{{ field.message_name }}_parse_from_string(message->{{ field.name }}, buffer, *offset + field_size, offset);
 
         {%- elif field.type == 'string' %}
             field_size = (size_t)get_varint64(buffer, offset);
