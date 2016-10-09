@@ -227,6 +227,8 @@ int
     size_t elt_size;
     {%- endif %}
     {%- if message.fields|selectattr('type', 'equalto', 'message')|first is defined %}
+    uint8_t varint_buffer[9];
+    size_t varint_offset;
     size_t start_offset;
     size_t extra_bytes;
     {%- endif %}
@@ -292,7 +294,9 @@ int
         }
 
         elt_size = *offset - start_offset;
-        extra_bytes = elt_size >> 7;
+        varint_offset = 0;
+        set_varint64(elt_size, varint_buffer, 9, &varint_offset);
+        extra_bytes = varint_offset - 1;
 
         /* make space for varint */
         if (extra_bytes > 0) {
@@ -305,7 +309,7 @@ int
 
         /* set element size */
         start_offset--;
-        set_varint64(elt_size, buffer, max_offset, &start_offset);
+        memcpy(buffer + start_offset, varint_buffer, varint_offset);
 
                 {%- elif field.type == 'string' %}
         elt_size = strlen(message->{{ field.name }}.values[i]);
@@ -373,7 +377,9 @@ int
         }
 
         elt_size = *offset - start_offset;
-        extra_bytes = elt_size >> 7;
+        varint_offset = 0;
+        set_varint64(elt_size, varint_buffer, 9, &varint_offset);
+        extra_bytes = varint_offset - 1;
 
         /* make space for varint */
         if (extra_bytes > 0) {
@@ -386,7 +392,7 @@ int
 
         /* set element size */
         start_offset--;
-        set_varint64(elt_size, buffer, max_offset, &start_offset);     
+        memcpy(buffer + start_offset, varint_buffer, varint_offset);
 
             {%- elif field.type == 'string' %}
         elt_size = strlen(message->{{ field.name }});

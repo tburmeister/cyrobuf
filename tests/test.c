@@ -34,7 +34,7 @@ int main(int argc, char **argv)
     uint8_t buffer[256];
     size_t offset = 0;
 
-    set_varint64(539395200, buffer, 256, &offset);
+    set_varint64(9223372036854775807, buffer, 256, &offset);
     printf("used %zd bytes setting varint\n", offset);
 
     offset = 0;
