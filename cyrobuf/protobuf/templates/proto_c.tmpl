@@ -263,6 +263,7 @@ int
             }
 
             *({{ field.c_type }} *)(buffer + *offset) = message->{{ field.name }}.values[i];
+            *offset += sizeof({{ field.c_type }});
 
                 {%- elif field.var_width == true %}
             if ({{ field.setter }}(message->{{ field.name }}.values[i], buffer, max_offset, offset) != 0) {
@@ -338,6 +339,7 @@ int
         }
 
         *({{ field.c_type }} *)(buffer + *offset) = message->{{ field.name }}.values[i];
+        *offset += sizeof({{ field.c_type }});
 
                 {%- elif field.var_width == true %}
         if ({{ field.setter }}(message->{{ field.name }}.values[i], buffer, max_offset, offset) != 0) {
@@ -417,6 +419,7 @@ int
         }
 
         *({{ field.c_type }} *)(buffer + *offset) = message->{{ field.name }};
+        *offset += sizeof({{ field.c_type }});
 
             {%- elif field.var_width == true %}
         if ({{ field.setter }}(message->{{ field.name }}, buffer, max_offset, offset) != 0) {
