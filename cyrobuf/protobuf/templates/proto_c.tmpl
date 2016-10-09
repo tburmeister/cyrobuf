@@ -217,8 +217,216 @@ int
 
 int
 {{ name }}_serialize_to_string(struct {{ name }} *message,
-	uint8_t *buffer, size_t buffer_size, size_t *used)
+	uint8_t *buffer, size_t max_offset, size_t *offset)
 {
+    int64_t key;
+    int64_t field_idx;
+    {%- if (message.fields|selectattr('type', 'equalto', 'message')|first is defined or
+            message.fields|selectattr('type', 'equalto', 'string')|first is defined or
+            message.fields|selectattr('type', 'equalto', 'bytes')|first is defined) %}
+    size_t elt_size;
+    {%- endif %}
+    {%- if message.fields|selectattr('type', 'equalto', 'message')|first is defined %}
+    size_t start_offset;
+    size_t extra_bytes;
+    {%- endif %}
+
+    {% for field in message.fields|sort(attribute='index') %}
+    /* {{ field.name }} */
+        {%- if field.modifier == 'repeated' and field.packed == true %}
+    key = ({{ field.index }} << 3) | 2;
+        {%- elif field.type in ('message', 'string', 'bytes') %}
+    key = ({{ field.index }} << 3) | 2;
+        {%- elif field.type in ('fixed64', 'sfixed64', 'double') %}
+    key = ({{ field.index }} << 3) | 1;
+        {%- elif field.type in ('fixed32', 'sfixed32', 'float') %}
+    key = ({{ field.index }} << 3) | 5;
+        {%- else %}
+    key = ({{ field.index }} << 3) | 0;
+        {%- endif %}
+
+        {%- if field.modifier == 'repeated' %}
+            {%- if field.packed == true %}
+    if (message->{{ field.name }}.len > 0) {
+        if (set_varint64(key, buffer, max_offset, offset) != 0) {
+            return 1;
+        }
+
+        if (set_varint64(message->{{ field.name }}.len * sizeof({{ field.c_type }}, buffer, max_offset, offset) != 0) {
+            return 1;
+        }
+
+        for (size_t i = 0; i < message->{{ field.name }}.len; i++) {
+                {%- if field.fixed_width == true %}
+            if (*offset + sizeof({{ field.c_type }}) > max_offset) {
+                return 1;
+            }
+
+            *({{ field.c_type }} *)(buffer + *offset) = message->{{ field.name }}.values[i];
+
+                {%- elif field.var_width == true %}
+            if ({{ field.setter }}(message->{{ field.name }}.values[i], buffer, max_offset, offset) != 0) {
+                return 1;
+            }
+                {%- endif %}
+        }
+    }
+
+            {%- else %}
+    for (size_t i = 0; i < message->{{ field.name }}.len; i++) {
+        if (set_varint64(key, buffer, max_offset, offset) != 0) {
+            return 1;
+        }
+
+                {%- if field.type == 'message' %}
+        /* leave space for submessage size (likely one byte) */
+        if (*offset >= max_offset) {
+            return 1;
+        }
+        start_offset = ++(*offset);
+
+        /* serialize submessage */
+        if ({% if field.is_nested %}{{ name }}{% endif %}{{ field.message_name }}_serialize_to_string(message->{{ field.name }}.values[i], buffer, max_offset, offset) != 0) {
+            return 1;
+        }
+
+        elt_size = *offset - start_offset;
+        extra_bytes = elt_size >> 7;
+
+        /* make space for varint */
+        if (extra_bytes > 0) {
+            if (*offset + extra_bytes > max_offset) {
+                return 1;
+            }
+            memmove(buffer + start_offset + extra_bytes, buffer + start_offset, elt_size);
+            *offset += extra_bytes;
+        }
+
+        /* set element size */
+        start_offset--;
+        set_varint64(elt_size, buffer, max_offset, &start_offset);
+
+                {%- elif field.type == 'string' %}
+        elt_size = strlen(message->{{ field.name }}.values[i]);
+        if (set_varint64(elt_size, buffer, max_offset, offset) != 0) {
+            return 1;
+        }
+
+        if (*offset + elt_size > max_offset) {
+            return 1;
+        }
+
+        strcpy((char *)(buffer + *offset), message->{{ field.name }}.values[i]);
+        *offset += elt_size;
+
+                {%- elif field.type == 'bytes' %}
+        elt_size = message->{{ field.name }}.values[i]->len;
+        if (set_varint64(elt_size, buffer, max_offset, offset) != 0) {
+            return 1;
+        }
+
+        if (*offset + elt_size > max_offset) {
+            return 1;
+        }
+
+        memcpy(buffer + *offset, message->{{ field.name }}.values[i]->data, elt_size);
+        *offset += elt_size;
+
+                {%- elif field.fixed_width == true %}
+        if (*offset + sizeof({{ field.c_type }}) > max_offset) {
+            return 1;
+        }
+
+        *({{ field.c_type }} *)(buffer + *offset) = message->{{ field.name }}.values[i];
+
+                {%- elif field.var_width == true %}
+        if ({{ field.setter }}(message->{{ field.name }}.values[i], buffer, max_offset, offset) != 0) {
+            return 1;
+        }
+                {%- endif %}
+    }
+            {%- endif %}
+
+        {%- else %}
+
+            {%- if field.type in ('message', 'bytes') %}
+    if (message->{{ field.name }} != NULL) {
+            {%- else %}
+    if (message->{{ field.name }} != {{ name }}_defaults.{{ field.name }}) {
+            {%- endif %}
+        if (set_varint64(key, buffer, max_offset, offset) != 0) {
+            return 1;
+        }
+
+            {%- if field.type == 'message' %}
+        /* leave space for submessage size (likely one byte) */
+        if (*offset >= max_offset) {
+            return 1;
+        }
+        start_offset = ++(*offset);
+
+        /* serialize submessage */
+        if ({% if field.is_nested %}{{ name }}{% endif %}{{ field.message_name }}_serialize_to_string(message->{{ field.name }}, buffer, max_offset, offset) != 0) {
+            return 1;
+        }
+
+        elt_size = *offset - start_offset;
+        extra_bytes = elt_size >> 7;
+
+        /* make space for varint */
+        if (extra_bytes > 0) {
+            if (*offset + extra_bytes > max_offset) {
+                return 1;
+            }
+            memmove(buffer + start_offset + extra_bytes, buffer + start_offset, elt_size);
+            *offset += extra_bytes;
+        }
+
+        /* set element size */
+        start_offset--;
+        set_varint64(elt_size, buffer, max_offset, &start_offset);     
+
+            {%- elif field.type == 'string' %}
+        elt_size = strlen(message->{{ field.name }});
+        if (set_varint64(elt_size, buffer, max_offset, offset) != 0) {
+            return 1;
+        }
+
+        if (*offset + elt_size > max_offset) {
+            return 1;
+        }
+
+        strcpy((char *)(buffer + *offset), message->{{ field.name }});
+        *offset += elt_size;
+
+            {%- elif field.type == 'bytes' %}
+        elt_size = message->{{ field.name }}.len;
+        if (set_varint64(elt_size, buffer, max_offset, offset) != 0) {
+            return 1;
+        }
+
+        if (*offset + elt_size > max_offset) {
+            return 1;
+        }
+
+        memcpy(buffer + *offset, message->{{ field.name }}.data, elt_size);
+
+            {%- elif field.fixed_width == true %}
+        if (*offset + sizeof({{ field.c_type }}) > max_offset) {
+            return 1;
+        }
+
+        *({{ field.c_type }} *)(buffer + *offset) = message->{{ field.name }};
+
+            {%- elif field.var_width == true %}
+        if ({{ field.setter }}(message->{{ field.name }}, buffer, max_offset, offset) != 0) {
+            return 1;
+        }
+            {%- endif %}
+    }
+        {%- endif %}
+    {% endfor %}
+
     return 0;
 }
 

@@ -34,7 +34,7 @@ int main(int argc, char **argv)
     uint8_t buffer[256];
     size_t offset = 0;
 
-    set_varint64(123456789, buffer, &offset);
+    set_varint64(123456789, buffer, 256, &offset);
     printf("used %zd bytes setting varint\n", offset);
 
     offset = 0;
@@ -47,6 +47,14 @@ int main(int argc, char **argv)
     test = Test_init();
     Test_parse_from_string(test, buffer, buffer_size, &offset);
     Test_print(test, 0);
+    printf("\n");
+
+    offset = 0;
+    memset(buffer, 0, 256);
+    Test_serialize_to_string(test, buffer, 256, &offset);
+    for (int i = 0; i < 256; i++) {
+        printf("%02x", buffer[i]);
+    }
     printf("\n");
 
 	Test_destroy(test);

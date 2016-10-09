@@ -110,11 +110,41 @@ get_signed_varint64(const uint8_t *buffer, size_t *offset)
 }
 
 int
-set_varint32(int32_t varint, uint8_t *buffer, size_t *offset)
+set_varint32(int32_t varint, uint8_t *buffer, size_t max_offset, size_t *offset)
 {
     /*
      * Serialize an integer into a protobuf varint.
      */
+    uint32_t enc = (uint32_t)varint;
+    if ((size_t)(enc >> 7) >= max_offset - *offset) {
+        return 1;
+    }
+
+    uint8_t bits = (uint8_t)(enc & 0x7f);
+    enc >>= 7;
+
+    while (enc != 0) {
+        buffer[(*offset)++] = (uint8_t)(bits | 0x80);
+        bits = enc & 0x7f;
+        enc >>= 7;
+    }
+
+    buffer[(*offset)++] = (uint8_t)bits;
+
+    return 0;
+}
+
+int
+set_varint64(int64_t varint, uint8_t *buffer, size_t max_offset, size_t *offset)
+{
+    /*
+     * Serialize an integer into a protobuf varint.
+     */
+    uint64_t enc = (uint64_t)varint;
+    if ((size_t)(enc >> 7) >= max_offset - *offset) {
+        return 1;
+    }
+
     uint8_t bits = (uint8_t)(varint & 0x7f);
     varint >>= 7;
 
@@ -130,32 +160,16 @@ set_varint32(int32_t varint, uint8_t *buffer, size_t *offset)
 }
 
 int
-set_varint64(int64_t varint, uint8_t *buffer, size_t *offset)
-{
-    /*
-     * Serialize an integer into a protobuf varint.
-     */
-    uint8_t bits = (uint8_t)(varint & 0x7f);
-    varint >>= 7;
-
-    while (varint != 0) {
-        buffer[(*offset)++] = (uint8_t)(bits | 0x80);
-        bits = varint & 0x7f;
-        varint >>= 7;
-    }
-
-    buffer[(*offset)++] = (uint8_t)bits;
-
-    return 0;
-}
-
-int
-set_signed_varint32(int32_t varint, uint8_t *buffer, size_t *offset)
+set_signed_varint32(int32_t varint, uint8_t *buffer, size_t max_offset, size_t *offset)
 {
     /*
      * Serialize an integer into a signed protobuf varint.
      */
     uint32_t enc = (varint << 1) ^ (varint >> 31);
+    if ((size_t)(enc >> 7) >= max_offset - *offset) {
+        return 1;
+    }
+
     uint8_t bits = enc & 0x7f;
     enc >>= 7;
 
@@ -171,12 +185,16 @@ set_signed_varint32(int32_t varint, uint8_t *buffer, size_t *offset)
 }
 
 int
-set_signed_varint64(int64_t varint, uint8_t *buffer, size_t *offset)
+set_signed_varint64(int64_t varint, uint8_t *buffer, size_t max_offset, size_t *offset)
 {
     /*
      * Serialize an integer into a signed protobuf varint.
      */
     uint64_t enc = (varint << 1) ^ (varint >> 63);
+    if ((size_t)(enc >> 7) >= max_offset - *offset) {
+        return 1;
+    }
+
     uint8_t bits = enc & 0x7f;
     enc >>= 7;
 
