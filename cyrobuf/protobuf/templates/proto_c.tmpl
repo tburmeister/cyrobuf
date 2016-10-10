@@ -121,7 +121,9 @@ int
 
     {% if message.fields|count > 0 %}
     while (*offset < max_offset) {
-        key = get_varint64(buffer, offset);
+        if (get_varint64(&key, buffer, max_offset, offset) != 0) {
+            return 1;
+        }
         field_idx = (key >> 3);
 
         switch (field_idx) {
@@ -130,7 +132,9 @@ int
         case {{ field.index }}:
         {%- if field.modifier == 'repeated' %}
             {%- if field.packed|default(false) == true %}
-            {{ field.name }}_marker = get_varint64(buffer, offset);
+            if (get_varint64(&{{ field.name }}_marker, buffer, max_offset, offset) != 0) {
+                return 1;
+            }
             {{ field.name }}_marker += *offset;
 
             while (*offset < {{ field.name }}_marker) {
@@ -138,25 +142,33 @@ int
                 {{ field.name }}_elt = *({{ field.c_type }} *)(buffer + *offset);
                 *offset += sizeof({{ field.c_type }});
                 {%- elif field.var_width == true %}
-                {{ field.name }}_elt = {{ field.getter }}(buffer, offset);
+                if ({{ field.getter }}({{ field.name }}_elt, buffer, max_offset, offset) != 0) {
+                    return 1;
+                }
                 {%- endif %}
                 {{ field.list_type }}_append(&message->{{ field.name }}, {{ field.name }}_elt);
             }
             {%- else %}
                 {%- if field.type == 'message' %}
             {{ field.name }}_elt = {% if field.is_nested %}{{ name }}{% endif %}{{ field.message_name }}_init();
-            field_size = (size_t)get_varint64(buffer, offset);
+            if (get_varint64((int64_t *)&field_size, buffer, max_offset, offset) != 0) {
+                return 1;
+            }
             {% if field.is_nested %}{{ name }}{% endif %}{{ field.message_name }}_parse_from_string({{ field.name }}_elt, buffer, *offset + field_size, offset);
             {% if field.is_nested %}{{ name }}{% endif %}{{ field.message_name }}_list_append_unsafe(&message->{{ field.name }}, {{ field.name }}_elt);
 
                 {%- elif field.type == 'string' %}
-            field_size = (size_t)get_varint64(buffer, offset);
+            if (get_varint64((int64_t *)&field_size, buffer, max_offset, offset) != 0) {
+                return 1;
+            }
             {{ field.name }}_elt = strndup((char *)(buffer + *offset), field_size);
             cyrobuf_string_list_append_unsafe(&message->{{ field.name }}, {{ field.name }}_elt);
             *offset += field_size;
 
                 {%- elif field.type == 'bytes' %}
-            field_size = (size_t)get_varint64(buffer, offset);
+            if (get_varint64((int64_t *)&field_size, buffer, max_offset, offset) != 0) {
+                return 1;
+            }
             {{ field.name }}_elt = calloc(1, sizeof(struct cyrobuf_bytes) + field_size);
             {{ field.name }}_elt->len = field_size;
             memcpy({{ field.name }}_elt->data, (buffer + *offset), field_size);
@@ -169,7 +181,9 @@ int
             *offset += sizeof({{ field.c_type }});
 
                 {%- elif field.var_width == true %}
-            {{ field.name }}_elt = {{ field.getter }}(buffer, offset);
+            if ({{ field.getter }}(&{{ field.name }}_elt, buffer, max_offset, offset) != 0) {
+                return 1;
+            }
             {{ field.list_type }}_append(&message->{{ field.name }}, {{ field.name }}_elt);
                 {%- endif %}
             {%- endif %}
@@ -178,30 +192,40 @@ int
             if (message->{{ field.name }} == NULL) {
                 message->{{ field.name }} = {% if field.is_nested %}{{ name }}{% endif %}{{ field.message_name }}_init();
             }
-            field_size = (size_t)get_varint64(buffer, offset);
+            if (get_varint64((int64_t *)&field_size, buffer, max_offset, offset) != 0) {
+                return 1;
+            }
             {% if field.is_nested %}{{ name }}{% endif %}{{ field.message_name }}_parse_from_string(message->{{ field.name }}, buffer, *offset + field_size, offset);
 
         {%- elif field.type == 'string' %}
-            field_size = (size_t)get_varint64(buffer, offset);
+            if (get_varint64((int64_t *)&field_size, buffer, max_offset, offset) != 0) {
+                return 1;
+            }
             message->{{ field.name }} = strndup((char *)(buffer + *offset), field_size);
             *offset += field_size;
 
         {%- elif field.type == 'bytes' %}
-            field_size = (size_t)get_varint64(buffer, offset);
+            if (get_varint64((int64_t *)&field_size, buffer, max_offset, offset) != 0) {
+                return 1;
+            }
             message->{{ field.name }} = calloc(1, sizeof(struct cyrobuf_bytes) + field_size);
             message->{{ field.name }}->len = field_size;
             memcpy(message->{{ field.name }}->data, (buffer + *offset), field_size);
             *offset += field_size;
 
         {%- elif field.type == 'enum' %}
-            message->{{ field.name }} = (enum {% if field.is_nested %}{{ name }}{% endif %}{{ field.enum_name }}){{ field.getter }}(buffer, offset);
+            if ({{ field.getter }}(&message->{{ field.name }}, buffer, max_offset, offset) != 0) {
+                return 1;
+            }
 
         {%- elif field.fixed_width == true %}
             message->{{ field.name }} = *({{ field.c_type }} *)(buffer + *offset);
             *offset += sizeof({{ field.c_type }});
 
         {%- elif field.var_width == true %}
-            message->{{ field.name }} = {{ field.getter }}(buffer, offset);
+            if ({{ field.getter }}(&message->{{ field.name }}, buffer, max_offset, offset) != 0) {
+                return 1;
+            }
 
         {%- endif %}
             break;

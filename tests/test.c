@@ -38,7 +38,8 @@ int main(int argc, char **argv)
     printf("used %zd bytes setting varint\n", offset);
 
     offset = 0;
-    int64_t value = get_varint64(buffer, &offset);
+    int64_t value;
+    get_varint64(&value, buffer, buffer_size, &offset);
     printf("got value %lld; consumed %zd bytes\n", value, offset);
 
     offset = 0;

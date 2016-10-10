@@ -19,94 +19,104 @@ cyrobuf_bytes_copy(struct cyrobuf_bytes *bytes)
     return out;
 }
 
-int32_t
-get_varint32(const uint8_t *buffer, size_t *offset)
+int
+get_varint32(int32_t *varint, const uint8_t *buffer, size_t max_offset, size_t *offset)
 {
     /*
      * Deserialize a protobuf varint starting from given offset in memory; update
      * offset based on number of bytes consumed.
      */
-    int32_t value = 0;
     int32_t base = 1;
     uint8_t val_byte;
 
-    for (;;) {
+    *varint = 0;
+    while (*offset <= max_offset) {
         val_byte = buffer[(*offset)++];
-        value += (int32_t)(val_byte & 0x7F) * base;
+        *varint += (int32_t)(val_byte & 0x7F) * base;
         if (val_byte & 0x80) {
             base <<= 7;
         } else {
-            return value;
+            return 0;
         }
     }
+
+    return 1;
 }
 
-int64_t
-get_varint64(const uint8_t *buffer, size_t *offset)
+int
+get_varint64(int64_t *varint, const uint8_t *buffer, size_t max_offset, size_t *offset)
 {
     /*
      * Deserialize a protobuf varint starting from given offset in memory; update
      * offset based on number of bytes consumed.
      */
-    int64_t value = 0;
     int64_t base = 1;
     uint8_t val_byte;
 
-    for (;;) {
+    *varint = 0;
+    while (*offset <= max_offset) {
         val_byte = buffer[(*offset)++];
-        value += (int64_t)(val_byte & 0x7F) * base;
+        *varint += (int64_t)(val_byte & 0x7F) * base;
         if (val_byte & 0x80) {
             base <<= 7;
         } else {
-            return value;
+            return 0;
         }
     }
+
+    return 1;
 }
 
-int32_t
-get_signed_varint32(const uint8_t *buffer, size_t *offset)
+int
+get_signed_varint32(int32_t *varint, const uint8_t *buffer, size_t max_offset, size_t *offset)
 {
     /*
      * Deserialize a signed protobuf varint starting from given offset in memory;
      * update offset based on number of bytes consumed.
      */
-    uint32_t value = 0;
     uint32_t base = 1;
     uint8_t val_byte;
 
-    for (;;) {
+    *varint = 0;
+    while (*offset <= max_offset) {
         val_byte = buffer[(*offset)++];
-        value += (uint32_t)(val_byte & 0x7F) * base;
+        *varint += (uint32_t)(val_byte & 0x7F) * base;
         if (val_byte & 0x80) {
             base <<= 7;
         } else {
             /* zigzag decoding */
-            return (int32_t)((value >> 1) ^ (-(value & 1)));
+            *varint = (int32_t)((*varint >> 1) ^ (-(*varint & 1)));
+            return 0;
         }
     }
+
+    return 1;
 }
 
-int64_t
-get_signed_varint64(const uint8_t *buffer, size_t *offset)
+int
+get_signed_varint64(int64_t *varint, const uint8_t *buffer, size_t max_offset, size_t *offset)
 {
     /*
      * Deserialize a signed protobuf varint starting from given offset in memory;
      * update offset based on number of bytes consumed.
      */
-    uint64_t value = 0;
     uint64_t base = 1;
     uint8_t val_byte;
 
-    for (;;) {
+    *varint = 0;
+    while (*offset <= max_offset) {
         val_byte = buffer[(*offset)++];
-        value += (uint64_t)(val_byte & 0x7F) * base;
+        *varint += (uint64_t)(val_byte & 0x7F) * base;
         if (val_byte & 0x80) {
             base <<= 7;
         } else {
             /* zigzag decoding */
-            return (int64_t)((value >> 1) ^ (-(value & 1)));
+            *varint = (int64_t)((*varint >> 1) ^ (-(*varint & 1)));
+            return 0;
         }
     }
+
+    return 1;
 }
 
 int
