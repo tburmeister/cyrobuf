@@ -82,7 +82,7 @@ def gen_message(fname, out="out", build="build", install=False):
 
     setup(name=name, script_args=script_args)
 
-def add_str_formats(message):
+def add_extra_data(message):
     str_format_map = {
         'float':    '%f',
         'double':   '%f',
@@ -101,11 +101,28 @@ def add_str_formats(message):
         'string':   '%s'
     }
 
+    getter_type_map = {
+        'enum':     'int32_t',
+        'timestamp':'int32_t',
+        'int32':    'int32_t',
+        'sint32':   'int32_t',
+        'sfixed32': 'int32_t',
+        'uint32':   'int32_t',
+        'fixed32':  'int32_t',
+        'bool':     'int32_t',
+        'int64':    'int64_t',
+        'sint64':   'int64_t',
+        'sfixed64': 'int64_t',
+        'uint64':   'int64_t',
+        'fixed64':  'int64_t'
+    }
+
     for field in message.fields:
         field.str_format = str_format_map.get(field.type)
+        field.getter_type = getter_type_map.get(field.type)
 
     for submessage in message.messages.values():
-        add_str_formats(submessage)
+        add_extra_data(submessage)
 
 def generate(fname, out, parser, templ_h, templ_c):
 
@@ -120,7 +137,7 @@ def generate(fname, out, parser, templ_h, templ_c):
     msgdef['fname'] = m
     msgdef['header_block'] = "%s_PROTO_H" % m.upper()
     for message in msgdef['messages']:
-        add_str_formats(message)
+        add_extra_data(message)
 
     with open(os.path.join(out, name_h), 'w') as fp:
         fp.write(templ_h.render(msgdef, version_major=sys.version_info.major))
