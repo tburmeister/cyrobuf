@@ -22,6 +22,7 @@ int set_varint32(int32_t varint, uint8_t *buffer, size_t max_offset, size_t *off
 int set_varint64(int64_t varint, uint8_t *buffer, size_t max_offset, size_t *offset);
 int set_signed_varint32(int32_t varint, uint8_t *buffer, size_t max_offset, size_t *offset);
 int set_signed_varint64(int64_t varint, uint8_t *buffer, size_t max_offset, size_t *offset);
+int skip_generic(const uint8_t *buffer, size_t max_offset, size_t *offset, int wire_type);
 
 #endif
 

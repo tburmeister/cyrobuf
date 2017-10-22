@@ -1,4 +1,5 @@
 .eggs
+*.pyc
 *.swp
 build
 cyrobuf.egg-info

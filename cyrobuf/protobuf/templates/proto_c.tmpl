@@ -255,8 +255,11 @@ int
         {%- endif %}
             break;
     {%- endfor %}
+		/* Unknown field */
         default:
-            return 1;
+			if (skip_generic(buffer, max_offset, offset, key & 0x7) != 0) {
+				return 1;
+			}
         }
     }
     {%- endif %}

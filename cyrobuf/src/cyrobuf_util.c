@@ -219,3 +219,28 @@ set_signed_varint64(int64_t varint, uint8_t *buffer, size_t max_offset, size_t *
     return 0;
 }
 
+int
+skip_generic(const uint8_t *buffer, size_t max_offset, size_t *offset, int wire_type)
+{
+	int64_t varint;
+
+	switch (wire_type) {
+		case 0:
+			return get_varint64(&varint, buffer, max_offset, offset);
+		case 1:
+			*offset += sizeof(uint64_t);
+			break;
+		case 2:
+			get_varint64(&varint, buffer, max_offset, offset);
+			*offset += (size_t)varint;
+			break;
+		case 5:
+			*offset += sizeof(uint32_t);
+			break;
+		default:
+			return 1;
+	}
+
+	return *offset <= max_offset;
+}
+
