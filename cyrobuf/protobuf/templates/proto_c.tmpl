@@ -13,7 +13,7 @@ static const struct {{ message.full_name }} {{ message.full_name }}_defaults = {
         {%- elif field.type == 'string' %}
     .{{ field.name }} = {{ field.default|default('NULL', true) }}
         {%- else %}
-	.{{ field.name }} = {{ field.default|default('0', true) }}
+    .{{ field.name }} = {{ field.default|default('0', true) }}
         {%- endif %}
         {%- if not loop.last %},{% endif %}
     {%- endfor %}
@@ -92,7 +92,7 @@ struct {{ message.full_name }} *
 
 int
 {{ message.full_name }}_parse_from_string(struct {{ message.full_name }} *message,
-	const uint8_t *buffer, size_t max_offset, size_t *offset)
+    const uint8_t *buffer, size_t max_offset, size_t *offset)
 {
     int64_t key;
     int64_t field_idx;
@@ -255,11 +255,11 @@ int
         {%- endif %}
             break;
     {%- endfor %}
-		/* Unknown field */
+        /* Unknown field */
         default:
-			if (skip_generic(buffer, max_offset, offset, key & 0x7) != 0) {
-				return 1;
-			}
+            if (skip_generic(buffer, max_offset, offset, key & 0x7) != 0) {
+                return 1;
+            }
         }
     }
     {%- endif %}
@@ -269,7 +269,7 @@ int
 
 int
 {{ message.full_name }}_serialize_to_string(struct {{ message.full_name }} *message,
-	uint8_t *buffer, size_t max_offset, size_t *offset)
+    uint8_t *buffer, size_t max_offset, size_t *offset)
 {
     int64_t key;
     int64_t field_idx;
@@ -647,9 +647,9 @@ int
     return 0;
 }
 
-	{%- for submessage_name, submessage in message.messages.items() %}
+    {%- for submessage_name, submessage in message.messages.items() %}
 {{ structdef(submessage) }}
-	{%- endfor %}
+    {%- endfor %}
 {%- endmacro %}
 
 {%- for message in messages %}

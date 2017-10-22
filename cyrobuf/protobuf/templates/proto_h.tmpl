@@ -14,33 +14,33 @@
 {%- endfor %}
 
 {%- macro structdef(message) %}
-	{%- for enum_name, enum in message.enums.items() %}
+    {%- for enum_name, enum in message.enums.items() %}
 {{ enumdef(enum) }}
-	{%- endfor %}
+    {%- endfor %}
 
-	{%- for submessage_name, submessage in message.messages.items() %}
+    {%- for submessage_name, submessage in message.messages.items() %}
 {{ structdef(submessage) }}
-	{%- endfor %}
+    {%- endfor %}
 
 struct {{ message.full_name }} {
 {% for field in message.fields|sort(attribute='index') -%}
-	{%- if field.modifier == 'repeated' %}
+    {%- if field.modifier == 'repeated' %}
         {%- if field.type == 'message' %}
     struct {{ field.message_name }}_list {{ field.name }};
         {%- else %}
-	struct {{ field.list_type }} {{ field.name }};
+    struct {{ field.list_type }} {{ field.name }};
         {%- endif %}
-	{%- elif field.type == 'string' %}
-	char *{{ field.name }};
-	{%- elif field.type == 'bytes' %}
-	struct cyrobuf_bytes *{{ field.name }};
-	{%- elif field.type == 'message' %}
-	struct {{ field.message_name }} *{{ field.name }};
-	{%- elif field.type == 'enum' %}
-	enum {{ field.enum_name }} {{ field.name }};
-	{%- else %}
-	{{ field.c_type }} {{ field.name }};
-	{%- endif %}
+    {%- elif field.type == 'string' %}
+    char *{{ field.name }};
+    {%- elif field.type == 'bytes' %}
+    struct cyrobuf_bytes *{{ field.name }};
+    {%- elif field.type == 'message' %}
+    struct {{ field.message_name }} *{{ field.name }};
+    {%- elif field.type == 'enum' %}
+    enum {{ field.enum_name }} {{ field.name }};
+    {%- else %}
+    {{ field.c_type }} {{ field.name }};
+    {%- endif %}
 {%- endfor %}
 };
 
@@ -55,9 +55,9 @@ void {{ message.full_name }}_destroy(struct {{ message.full_name }} *message);
 void {{ message.full_name }}_clear(struct {{ message.full_name }} *message);
 struct {{ message.full_name }} *{{ message.full_name }}_copy(struct {{ message.full_name }} *message);
 int {{ message.full_name }}_parse_from_string(struct {{ message.full_name }} *message,
-	const uint8_t *buffer, size_t max_offset, size_t *offset);
+    const uint8_t *buffer, size_t max_offset, size_t *offset);
 int {{ message.full_name }}_serialize_to_string(struct {{ message.full_name }} *message,
-	uint8_t *buffer, size_t max_offset, size_t *used);
+    uint8_t *buffer, size_t max_offset, size_t *used);
 void {{ message.full_name }}_print(struct {{ message.full_name }} *message, size_t indent);
 
 void {{ message.full_name }}_list_destroy(struct {{ message.full_name }}_list *list);
@@ -72,10 +72,10 @@ int {{ message.full_name }}_list_remove(struct {{ message.full_name }}_list *lis
 
 {%- macro enumdef(enum) %}
 enum {{ enum.full_name }} {
-	{%- for field in enum.fields %}
-	{{ field.name }} = {{ field.value }}
+    {%- for field in enum.fields %}
+    {{ field.name }} = {{ field.value }}
         {%- if not loop.last %},{% endif %}
-	{%- endfor %}
+    {%- endfor %}
 };
 {%- endmacro %}
 
