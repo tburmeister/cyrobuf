@@ -13,20 +13,20 @@
 #include "{{ import }}_proto.h"
 {%- endfor %}
 
-{%- macro structdef(name, message) %}
+{%- macro structdef(message) %}
 	{%- for enum_name, enum in message.enums.items() %}
-{{ enumdef(name + enum_name, enum) }}
+{{ enumdef(enum) }}
 	{%- endfor %}
 
-	{%- for message_name, message_message in message.messages.items() %}
-{{ structdef(name + message_name, message_message) }}
+	{%- for submessage_name, submessage in message.messages.items() %}
+{{ structdef(submessage) }}
 	{%- endfor %}
 
-struct {{ name }} {
+struct {{ message.full_name }} {
 {% for field in message.fields|sort(attribute='index') -%}
 	{%- if field.modifier == 'repeated' %}
         {%- if field.type == 'message' %}
-    struct {% if field.is_nested %}{{ name }}{% endif %}{{ field.message_name }}_list {{ field.name }};
+    struct {{ field.message_name }}_list {{ field.name }};
         {%- else %}
 	struct {{ field.list_type }} {{ field.name }};
         {%- endif %}
@@ -35,43 +35,43 @@ struct {{ name }} {
 	{%- elif field.type == 'bytes' %}
 	struct cyrobuf_bytes *{{ field.name }};
 	{%- elif field.type == 'message' %}
-	struct {% if field.is_nested %}{{ name }}{% endif %}{{ field.message_name }} *{{ field.name }};
+	struct {{ field.message_name }} *{{ field.name }};
 	{%- elif field.type == 'enum' %}
-	enum {% if field.is_nested %}{{ name }}{% endif %}{{ field.enum_name }} {{ field.name }};
+	enum {{ field.enum_name }} {{ field.name }};
 	{%- else %}
 	{{ field.c_type }} {{ field.name }};
 	{%- endif %}
 {%- endfor %}
 };
 
-struct {{ name }}_list {
-    struct {{ name }} **values;
+struct {{ message.full_name }}_list {
+    struct {{ message.full_name }} **values;
     size_t len;
     size_t _size;
 };
 
-struct {{ name }} *{{ name }}_init(void);
-void {{ name }}_destroy(struct {{ name }} *message);
-void {{ name }}_clear(struct {{ name }} *message);
-struct {{ name }} *{{ name }}_copy(struct {{ name }} *message);
-int {{ name }}_parse_from_string(struct {{ name }} *message,
+struct {{ message.full_name }} *{{ message.full_name }}_init(void);
+void {{ message.full_name }}_destroy(struct {{ message.full_name }} *message);
+void {{ message.full_name }}_clear(struct {{ message.full_name }} *message);
+struct {{ message.full_name }} *{{ message.full_name }}_copy(struct {{ message.full_name }} *message);
+int {{ message.full_name }}_parse_from_string(struct {{ message.full_name }} *message,
 	const uint8_t *buffer, size_t max_offset, size_t *offset);
-int {{ name }}_serialize_to_string(struct {{ name }} *message,
+int {{ message.full_name }}_serialize_to_string(struct {{ message.full_name }} *message,
 	uint8_t *buffer, size_t max_offset, size_t *used);
-void {{ name }}_print(struct {{ name }} *message, size_t indent);
+void {{ message.full_name }}_print(struct {{ message.full_name }} *message, size_t indent);
 
-void {{ name }}_list_destroy(struct {{ name }}_list *list);
-void {{ name }}_list_copy(struct {{ name }}_list *dest, struct {{ name }}_list *src);
-void {{ name }}_list_append(struct {{ name }}_list *list, struct {{ name }} *message);
-void {{ name }}_list_append_unsafe(struct {{ name }}_list *list, struct {{ name }} *message);
-void {{ name }}_list_extend(struct {{ name }}_list *list, struct {{ name }}_list *other);
-void {{ name }}_list_insert(struct {{ name }}_list *list, int i, struct {{ name }} *message);
-struct {{ name }} *{{ name }}_list_pop(struct {{ name }}_list *list);
-int {{ name }}_list_remove(struct {{ name }}_list *list, struct {{ name }} *message);
+void {{ message.full_name }}_list_destroy(struct {{ message.full_name }}_list *list);
+void {{ message.full_name }}_list_copy(struct {{ message.full_name }}_list *dest, struct {{ message.full_name }}_list *src);
+void {{ message.full_name }}_list_append(struct {{ message.full_name }}_list *list, struct {{ message.full_name }} *message);
+void {{ message.full_name }}_list_append_unsafe(struct {{ message.full_name }}_list *list, struct {{ message.full_name }} *message);
+void {{ message.full_name }}_list_extend(struct {{ message.full_name }}_list *list, struct {{ message.full_name }}_list *other);
+void {{ message.full_name }}_list_insert(struct {{ message.full_name }}_list *list, int i, struct {{ message.full_name }} *message);
+struct {{ message.full_name }} *{{ message.full_name }}_list_pop(struct {{ message.full_name }}_list *list);
+int {{ message.full_name }}_list_remove(struct {{ message.full_name }}_list *list, struct {{ message.full_name }} *message);
 {%- endmacro %}
 
-{%- macro enumdef(name, enum) %}
-enum {{ name }} {
+{%- macro enumdef(enum) %}
+enum {{ enum.full_name }} {
 	{%- for field in enum.fields %}
 	{{ field.name }} = {{ field.value }}
         {%- if not loop.last %},{% endif %}
@@ -80,11 +80,11 @@ enum {{ name }} {
 {%- endmacro %}
 
 {%- for enum in enums %}
-{{ enumdef(enum.name, enum) }}
+{{ enumdef(enum) }}
 {%- endfor %}
 
 {%- for message in messages %}
-{{ structdef(message.name, message) }}
+{{ structdef(message) }}
 {%- endfor %}
 
 #endif

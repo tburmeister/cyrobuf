@@ -3,8 +3,8 @@
 
 #include "{{ fname }}_proto.h"
 
-{%- macro structdef(name, message) %}
-static const struct {{ name }} {{ name }}_defaults = {
+{%- macro structdef(message) %}
+static const struct {{ message.full_name }} {{ message.full_name }}_defaults = {
     {%- for field in message.fields %}
         {%- if field.modifier == 'repeated' %}
     .{{ field.name }} = { 0 }
@@ -19,12 +19,12 @@ static const struct {{ name }} {{ name }}_defaults = {
     {%- endfor %}
 };
 
-struct {{ name }} *
-{{ name }}_init()
+struct {{ message.full_name }} *
+{{ message.full_name }}_init()
 {
-    struct {{ name }} *message = malloc(sizeof(struct {{ name }}));
+    struct {{ message.full_name }} *message = malloc(sizeof(struct {{ message.full_name }}));
 
-    memcpy(message, &{{ name }}_defaults, sizeof(struct {{ name }}));
+    memcpy(message, &{{ message.full_name }}_defaults, sizeof(struct {{ message.full_name }}));
 
     /* Note: lazy init arrays for now */
 
@@ -32,7 +32,7 @@ struct {{ name }} *
 }
 
 void
-{{ name }}_destroy(struct {{ name }} *message)
+{{ message.full_name }}_destroy(struct {{ message.full_name }} *message)
 {
     if (message == NULL) {
         return;
@@ -41,19 +41,19 @@ void
     {%- for field in message.fields %}
         {%- if field.modifier == 'repeated' %}
             {%- if field.type == 'message' %}
-    {% if field.is_nested %}{{ name }}{% endif %}{{ field.message_name }}_list_destroy(&message->{{ field.name }});
+    {% if field.is_nested %}{{ message.full_name }}{% endif %}{{ field.message_name }}_list_destroy(&message->{{ field.name }});
             {%- else %}
     {{ field.list_type }}_destroy(&message->{{ field.name }});
             {%- endif %}
         {%- elif field.type == 'message' %}
-    {% if field.is_nested %}{{ name }}{% endif %}{{ field.message_name }}_destroy(message->{{ field.name }});
+    {% if field.is_nested %}{{ message.full_name }}{% endif %}{{ field.message_name }}_destroy(message->{{ field.name }});
         {%- elif field.type == 'bytes' %}
     if (message->{{ field.name }} != NULL) {
         free(message->{{ field.name }});
     }
         {%- elif field.type == 'string' %}
     /* yes, pointer comparison */
-    if (message->{{ field.name }} != {{ name }}_defaults.{{ field.name }}) {
+    if (message->{{ field.name }} != {{ message.full_name }}_defaults.{{ field.name }}) {
         free(message->{{ field.name }});
     }
         {%- endif %}
@@ -63,27 +63,27 @@ void
 }
 
 void
-{{ name }}_clear(struct {{ name }} *message)
+{{ message.full_name }}_clear(struct {{ message.full_name }} *message)
 {
-    memcpy(message, &{{ name }}_defaults, sizeof(struct {{ name }}));
+    memcpy(message, &{{ message.full_name }}_defaults, sizeof(struct {{ message.full_name }}));
 }
 
-struct {{ name }} *
-{{ name }}_copy(struct {{ name }} *message)
+struct {{ message.full_name }} *
+{{ message.full_name }}_copy(struct {{ message.full_name }} *message)
 {
-    struct {{ name }} *out = malloc(sizeof(struct {{ name }}));
+    struct {{ message.full_name }} *out = malloc(sizeof(struct {{ message.full_name }}));
 
-    memcpy(out, message, sizeof(struct {{ name }}));
+    memcpy(out, message, sizeof(struct {{ message.full_name }}));
 
     {%- for field in message.fields %}
         {%- if field.modifier == 'repeated' %}
             {%- if field.type == 'message' %}
-    {% if field.is_nested %}{{ name }}{% endif %}{{ field.message_name }}_list_copy(&out->{{ field.name }}, &message->{{ field.name }});
+    {% if field.is_nested %}{{ message.full_name }}{% endif %}{{ field.message_name }}_list_copy(&out->{{ field.name }}, &message->{{ field.name }});
             {%- else %}
     {{ field.list_type }}_copy(&out->{{ field.name }}, &message->{{ field.name }});
             {%- endif %}
         {%- elif field.type == 'message' %}
-    out->{{ field.name }} = {% if field.is_nested %}{{ name }}{% endif %}{{ field.message_name }}_copy(message->{{ field.name }});
+    out->{{ field.name }} = {% if field.is_nested %}{{ message.full_name }}{% endif %}{{ field.message_name }}_copy(message->{{ field.name }});
         {%- endif %}
     {%- endfor %}
 
@@ -91,7 +91,7 @@ struct {{ name }} *
 }
 
 int
-{{ name }}_parse_from_string(struct {{ name }} *message,
+{{ message.full_name }}_parse_from_string(struct {{ message.full_name }} *message,
 	const uint8_t *buffer, size_t max_offset, size_t *offset)
 {
     int64_t key;
@@ -108,7 +108,7 @@ int
         {%- endif %}
         {%- if field.modifier == 'repeated' %}
             {%- if field.type == 'message' %}
-    struct {% if field.is_nested %}{{ name }}{% endif %}{{ field.message_name }} *{{ field.name }}_elt;
+    struct {% if field.is_nested %}{{ message.full_name }}{% endif %}{{ field.message_name }} *{{ field.name }}_elt;
             {%- elif field.type == 'string' %}
     char *{{ field.name }}_elt;
             {%- elif field.type == 'bytes' %}
@@ -153,14 +153,14 @@ int
             }
             {%- else %}
                 {%- if field.type == 'message' %}
-            {{ field.name }}_elt = {% if field.is_nested %}{{ name }}{% endif %}{{ field.message_name }}_init();
+            {{ field.name }}_elt = {% if field.is_nested %}{{ message.full_name }}{% endif %}{{ field.message_name }}_init();
             if (get_varint64((int64_t *)&field_size, buffer, max_offset, offset) != 0) {
                 return 1;
             }
-            if ({% if field.is_nested %}{{ name }}{% endif %}{{ field.message_name }}_parse_from_string({{ field.name }}_elt, buffer, *offset + field_size, offset) != 0) {
+            if ({% if field.is_nested %}{{ message.full_name }}{% endif %}{{ field.message_name }}_parse_from_string({{ field.name }}_elt, buffer, *offset + field_size, offset) != 0) {
                 return 1;
             }
-            {% if field.is_nested %}{{ name }}{% endif %}{{ field.message_name }}_list_append_unsafe(&message->{{ field.name }}, {{ field.name }}_elt);
+            {% if field.is_nested %}{{ message.full_name }}{% endif %}{{ field.message_name }}_list_append_unsafe(&message->{{ field.name }}, {{ field.name }}_elt);
 
                 {%- elif field.type == 'string' %}
             if (get_varint64((int64_t *)&field_size, buffer, max_offset, offset) != 0) {
@@ -204,12 +204,12 @@ int
 
         {%- elif field.type == 'message' %}
             if (message->{{ field.name }} == NULL) {
-                message->{{ field.name }} = {% if field.is_nested %}{{ name }}{% endif %}{{ field.message_name }}_init();
+                message->{{ field.name }} = {% if field.is_nested %}{{ message.full_name }}{% endif %}{{ field.message_name }}_init();
             }
             if (get_varint64((int64_t *)&field_size, buffer, max_offset, offset) != 0) {
                 return 1;
             }
-            if ({% if field.is_nested %}{{ name }}{% endif %}{{ field.message_name }}_parse_from_string(message->{{ field.name }}, buffer, *offset + field_size, offset) != 0) {
+            if ({% if field.is_nested %}{{ message.full_name }}{% endif %}{{ field.message_name }}_parse_from_string(message->{{ field.name }}, buffer, *offset + field_size, offset) != 0) {
                 return 1;
             }
 
@@ -268,7 +268,7 @@ int
 }
 
 int
-{{ name }}_serialize_to_string(struct {{ name }} *message,
+{{ message.full_name }}_serialize_to_string(struct {{ message.full_name }} *message,
 	uint8_t *buffer, size_t max_offset, size_t *offset)
 {
     int64_t key;
@@ -341,7 +341,7 @@ int
         start_offset = ++(*offset);
 
         /* serialize submessage */
-        if ({% if field.is_nested %}{{ name }}{% endif %}{{ field.message_name }}_serialize_to_string(message->{{ field.name }}.values[i], buffer, max_offset, offset) != 0) {
+        if ({% if field.is_nested %}{{ message.full_name }}{% endif %}{{ field.message_name }}_serialize_to_string(message->{{ field.name }}.values[i], buffer, max_offset, offset) != 0) {
             return 1;
         }
 
@@ -410,7 +410,7 @@ int
             {%- if field.type in ('message', 'bytes') %}
     if (message->{{ field.name }} != NULL) {
             {%- else %}
-    if (message->{{ field.name }} != {{ name }}_defaults.{{ field.name }}) {
+    if (message->{{ field.name }} != {{ message.full_name }}_defaults.{{ field.name }}) {
             {%- endif %}
         if (set_varint64(key, buffer, max_offset, offset) != 0) {
             return 1;
@@ -424,7 +424,7 @@ int
         start_offset = ++(*offset);
 
         /* serialize submessage */
-        if ({% if field.is_nested %}{{ name }}{% endif %}{{ field.message_name }}_serialize_to_string(message->{{ field.name }}, buffer, max_offset, offset) != 0) {
+        if ({% if field.is_nested %}{{ message.full_name }}{% endif %}{{ field.message_name }}_serialize_to_string(message->{{ field.name }}, buffer, max_offset, offset) != 0) {
             return 1;
         }
 
@@ -492,7 +492,7 @@ int
 }
 
 void
-{{ name }}_print(struct {{ name }} *message, size_t indent)
+{{ message.full_name }}_print(struct {{ message.full_name }} *message, size_t indent)
 {
     char leader[MAX_INDENT] = { 0 };
     indent = indent < MAX_INDENT ? indent : MAX_INDENT - 1;
@@ -501,7 +501,7 @@ void
         leader[i] = '\t';
     }
 
-    printf("%s%s: {\n", leader, "{{ name }}");
+    printf("%s%s: {\n", leader, "{{ message.full_name }}");
     {%- for field in message.fields|sort(attribute='index') %}
     printf("%s\t%s: ", leader, "{{ field.name }}");
         {%- if field.modifier == 'repeated' %}
@@ -509,7 +509,7 @@ void
     for (size_t i = 0; i < message->{{ field.name }}.len; i++) {
             {%- if field.type == 'message' %}
         printf("\n");
-        {% if field.is_nested %}{{ name }}{% endif %}{{ field.message_name }}_print(message->{{ field.name }}.values[i], indent + 2);
+        {% if field.is_nested %}{{ message.full_name }}{% endif %}{{ field.message_name }}_print(message->{{ field.name }}.values[i], indent + 2);
             {%- elif field.type != 'bytes' %}
         printf("{{ field.str_format }}", message->{{ field.name }}.values[i]);
             {%- endif %}
@@ -525,7 +525,7 @@ void
         {%- elif field.type == 'message' %}
     if (message->{{ field.name }} != NULL) {
         printf("\n");
-        {% if field.is_nested %}{{ name }}{% endif %}{{ field.message_name }}_print(message->{{ field.name }}, indent + 2);
+        {% if field.is_nested %}{{ message.full_name }}{% endif %}{{ field.message_name }}_print(message->{{ field.name }}, indent + 2);
     } else {
         printf("NULL");
     }
@@ -544,11 +544,11 @@ void
 }
 
 void
-{{ name }}_list_destroy(struct {{ name }}_list *list)
+{{ message.full_name }}_list_destroy(struct {{ message.full_name }}_list *list)
 {
     /* free elements of list but not the list itself */
     for (size_t i = 0; i < list->len; i++) {
-        {{ name }}_destroy(list->values[i]);
+        {{ message.full_name }}_destroy(list->values[i]);
     }
 
     free(list->values);
@@ -558,75 +558,75 @@ void
 }
 
 void
-{{ name }}_list_copy(struct {{ name }}_list *dest, struct {{ name }}_list *src)
+{{ message.full_name }}_list_copy(struct {{ message.full_name }}_list *dest, struct {{ message.full_name }}_list *src)
 {
-    dest->values = realloc(dest->values, src->len * sizeof(struct {{ name }} *));
+    dest->values = realloc(dest->values, src->len * sizeof(struct {{ message.full_name }} *));
     dest->len = dest->_size = src->len;
 
     for (size_t i = 0; i < src->len; i++) {
-        dest->values[i] = {{ name }}_copy(src->values[i]);
+        dest->values[i] = {{ message.full_name }}_copy(src->values[i]);
     }
 }
 
 void
-{{ name }}_list_append(struct {{ name }}_list *list, struct {{ name }} *message)
+{{ message.full_name }}_list_append(struct {{ message.full_name }}_list *list, struct {{ message.full_name }} *message)
 {
     if (list->_size <= list->len) {
         list->_size = list->_size > 0 ? list->_size << 1 : 4;
-        list->values = realloc(list->values, list->_size * sizeof(struct {{ name }} *));
+        list->values = realloc(list->values, list->_size * sizeof(struct {{ message.full_name }} *));
     }
 
-    list->values[list->len++] = {{ name }}_copy(message);
+    list->values[list->len++] = {{ message.full_name }}_copy(message);
 }
 
 void
-{{ name }}_list_append_unsafe(struct {{ name }}_list *list, struct {{ name }} *message)
+{{ message.full_name }}_list_append_unsafe(struct {{ message.full_name }}_list *list, struct {{ message.full_name }} *message)
 {
     if (list->_size <= list->len) {
         list->_size = list->_size > 0 ? list->_size << 1 : 4;
-        list->values = realloc(list->values, list->_size * sizeof(struct {{ name }} *));
+        list->values = realloc(list->values, list->_size * sizeof(struct {{ message.full_name }} *));
     }
 
     list->values[list->len++] = message;
 }
 
 void
-{{ name }}_list_extend(struct {{ name }}_list *list, struct {{ name }}_list *other)
+{{ message.full_name }}_list_extend(struct {{ message.full_name }}_list *list, struct {{ message.full_name }}_list *other)
 {
     if (list->_size < list->len + other->len) {
         list->_size = list->len + other->len;
-        list->values = realloc(list->values, list->_size * sizeof(struct {{ name }} *));
+        list->values = realloc(list->values, list->_size * sizeof(struct {{ message.full_name }} *));
     }
 
     for (size_t i = 0; i < other->len; i++) {
-        list->values[list->len++] = {{ name }}_copy(other->values[i]);
+        list->values[list->len++] = {{ message.full_name }}_copy(other->values[i]);
     }
 }
 
 void
-{{ name }}_list_insert(struct {{ name }}_list *list, int i, struct {{ name }} *message)
+{{ message.full_name }}_list_insert(struct {{ message.full_name }}_list *list, int i, struct {{ message.full_name }} *message)
 {
     if (list->_size <= list->len) {
         list->_size = list->_size > 0 ? list->_size << 1 : 4;
-        list->values = realloc(list->values, list->_size * sizeof(struct {{ name }} *));
+        list->values = realloc(list->values, list->_size * sizeof(struct {{ message.full_name }} *));
     }
 
     for (size_t j = list->len; j > i; j--) {
-        list->values[j] = {{ name }}_copy(list->values[j - 1]);
+        list->values[j] = {{ message.full_name }}_copy(list->values[j - 1]);
     }
 
     list->values[i] = message;
     list->len++;
 }
 
-struct {{ name }} *
-{{ name }}_list_pop(struct {{ name }}_list *list)
+struct {{ message.full_name }} *
+{{ message.full_name }}_list_pop(struct {{ message.full_name }}_list *list)
 {
     return list->values[--list->len];
 }
 
 int
-{{ name }}_list_remove(struct {{ name }}_list *list, struct {{ name }} *message)
+{{ message.full_name }}_list_remove(struct {{ message.full_name }}_list *list, struct {{ message.full_name }} *message)
 {
     size_t i;
 
@@ -647,12 +647,12 @@ int
     return 0;
 }
 
-	{%- for message_name, message_message in message.messages.items() %}
-{{ structdef(name + message_name, message_message) }}
+	{%- for submessage_name, submessage in message.messages.items() %}
+{{ structdef(submessage) }}
 	{%- endfor %}
 {%- endmacro %}
 
 {%- for message in messages %}
-{{ structdef(message.name, message) }}
+{{ structdef(message) }}
 {%- endfor %}
 
