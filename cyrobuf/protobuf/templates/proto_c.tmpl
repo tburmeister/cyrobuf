@@ -7,7 +7,11 @@
 static const struct {{ message.full_name }} {{ message.full_name }}_defaults = {
     {%- for field in message.fields %}
         {%- if field.modifier == 'repeated' %}
-    .{{ field.name }} = { 0 }
+    .{{ field.name }} = {
+        .values = NULL,
+        .len = 0,
+        ._size = 0
+    }
         {%- elif field.type in ('message', 'bytes') %}
     .{{ field.name }} = NULL
         {%- elif field.type == 'string' %}
