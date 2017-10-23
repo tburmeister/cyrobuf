@@ -1,3 +1,4 @@
+#include <inttypes.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -515,7 +516,7 @@ void
         printf("\n");
         {% if field.is_nested %}{{ message.full_name }}{% endif %}{{ field.message_name }}_print(message->{{ field.name }}.values[i], indent + 2);
             {%- elif field.type != 'bytes' %}
-        printf("{{ field.str_format }}", message->{{ field.name }}.values[i]);
+        printf("%" {{ field.str_format }}, message->{{ field.name }}.values[i]);
             {%- endif %}
         if (i < message->{{ field.name }}.len - 1) {
             printf(", ");
@@ -541,7 +542,7 @@ void
         printf("NULL\n");
     }
         {%- elif field.type != 'bytes' %}
-    printf("{{ field.str_format }}\n", message->{{ field.name }});
+    printf("%" {{ field.str_format }} "\n", message->{{ field.name }});
         {%- endif %}
     {%- endfor %}
     printf("%s}", leader);

@@ -23,11 +23,11 @@ int main(int argc, char **argv)
 {
 	struct Test *test = Test_init();
     uint8_t buffer[256];
-    size_t offset = 0;
 
 	memcpy(buffer, test_buffer, test_buffer_size);
 
 	for (int i = 0; i < MAX_ITER; i++) {
+        size_t offset = 0;
 		Test_clear(test);
 		Test_parse_from_string(test, buffer, test_buffer_size, &offset);
 	}

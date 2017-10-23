@@ -84,21 +84,21 @@ def gen_message(fname, out="out", build="build", install=False):
 
 def add_extra_data(message):
     str_format_map = {
-        'float':    '%f',
-        'double':   '%f',
-        'enum':     '%d',
-        'int32':    '%d',
-        'sint32':   '%d',
-        'sfixed32': '%d',
-        'uint32':   '%u',
-        'fixed32':  '%u',
-        'bool':     '%u',
-        'int64':    '%lld',
-        'sint64':   '%lld',
-        'sfixed64': '%lld',
-        'uint64':   '%llu',
-        'fixed64':  '%llu',
-        'string':   '%s'
+        'float':    '"f"',
+        'double':   '"f"',
+        'enum':     '"d"',
+        'int32':    'PRId32',
+        'sint32':   'PRId32',
+        'sfixed32': 'PRId32',
+        'uint32':   'PRIu32',
+        'fixed32':  'PRIu32',
+        'bool':     '"u"',
+        'int64':    'PRId64',
+        'sint64':   'PRId64',
+        'sfixed64': 'PRId64',
+        'uint64':   'PRIu64',
+        'fixed64':  'PRIu64',
+        'string':   '"s"'
     }
 
     getter_type_map = {
